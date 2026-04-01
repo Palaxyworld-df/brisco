@@ -203,48 +203,88 @@ with st.form("qc_form"):
 # SAVE TO DATABASE
 # ---------------------------
 if submitted:
-    cursor.execute("""
-    INSERT INTO scores VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    """, (
-        datetime.now().isoformat(),
-        user_id,
-        rater_id,
-        case_id,
-        segmentation_method,
+cursor.execute("""
+INSERT INTO scores (
+    timestamp,
+    user_id,
+    rater_id,
+    case_id,
+    segmentation_method,
 
-        scan_excluded,
-        exclusion_reason,
-        fat_suppression,
-        fat_suppression_quality,
+    scan_excluded,
+    exclusion_reason,
+    fat_suppression,
+    fat_suppression_quality,
 
-        single_lesion,
-        mass_enhancement,
-        non_mass_enhancement,
-        satellite_lesions,
-        num_satellites,
-        nodular_unclear,
-        necrosis,
+    single_lesion,
+    mass_enhancement,
+    non_mass_enhancement,
+    satellite_lesions,
+    num_satellites,
+    nodular_unclear,
+    necrosis,
 
-        strong_bpe,
+    strong_bpe,
 
-        satellite_included_omitted,
-        num_satellites_included,
-        required_additions,
-        required_deletions,
-        complex_corrections,
-        overall_quality,
+    satellite_included_omitted,
+    num_satellites_included,
+    required_additions,
+    required_deletions,
+    complex_corrections,
+    overall_quality,
 
-        int(fp_vessels),
-        int(fp_nodes),
-        int(fp_nodular),
-        int(fp_shape),
-        int(fp_skin),
-        int(fp_nipple),
-        int(fp_nme),
-        int(fp_satellites),
+    fp_vessels,
+    fp_nodes,
+    fp_nodular,
+    fp_shape,
+    fp_skin,
+    fp_nipple,
+    fp_nme,
+    fp_satellites,
 
-        fn_necrosis
-    ))
+    fn_necrosis
+)
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+""", (
+    datetime.now().isoformat(),
+    user_id,
+    rater_id,
+    case_id,
+    segmentation_method,
+
+    scan_excluded,
+    exclusion_reason,
+    fat_suppression,
+    fat_suppression_quality,
+
+    single_lesion,
+    mass_enhancement,
+    non_mass_enhancement,
+    satellite_lesions,
+    num_satellites,
+    nodular_unclear,
+    necrosis,
+
+    strong_bpe,
+
+    satellite_included_omitted,
+    num_satellites_included,
+    required_additions,
+    required_deletions,
+    complex_corrections,
+    overall_quality,
+
+    int(fp_vessels),
+    int(fp_nodes),
+    int(fp_nodular),
+    int(fp_shape),
+    int(fp_skin),
+    int(fp_nipple),
+    int(fp_nme),
+    int(fp_satellites),
+
+    fn_necrosis
+))
 
     conn.commit()
 
