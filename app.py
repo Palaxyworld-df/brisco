@@ -12,12 +12,48 @@ st.set_page_config(page_title="BRISCo", layout="centered")
 conn = sqlite3.connect("brisco.db", check_same_thread=False)
 cursor = conn.cursor()
 
+cursor.execute("DROP TABLE IF EXISTS scores")  # TEMPORARY
+
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT PRIMARY KEY,
-    profession TEXT,
-    country TEXT,
-    created_at TEXT
+CREATE TABLE scores (
+    timestamp TEXT,
+    user_id TEXT,
+    rater_id TEXT,
+    case_id TEXT,
+    segmentation_method TEXT,
+    
+    scan_excluded TEXT,
+    exclusion_reason TEXT,
+    fat_suppression TEXT,
+    fat_suppression_quality INTEGER,
+    
+    single_lesion TEXT,
+    mass_enhancement TEXT,
+    non_mass_enhancement TEXT,
+    satellite_lesions TEXT,
+    num_satellites INTEGER,
+    nodular_unclear TEXT,
+    necrosis TEXT,
+    
+    strong_bpe TEXT,
+    
+    satellite_included_omitted TEXT,
+    num_satellites_included INTEGER,
+    required_additions INTEGER,
+    required_deletions INTEGER,
+    complex_corrections TEXT,
+    overall_quality INTEGER,
+    
+    fp_vessels INTEGER,
+    fp_nodes INTEGER,
+    fp_nodular INTEGER,
+    fp_shape INTEGER,
+    fp_skin INTEGER,
+    fp_nipple INTEGER,
+    fp_nme INTEGER,
+    fp_satellites INTEGER,
+    
+    fn_necrosis TEXT
 )
 """)
 
