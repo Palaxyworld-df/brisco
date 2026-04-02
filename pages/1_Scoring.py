@@ -78,6 +78,25 @@ if "session_id" not in st.session_state:
 session_id = st.session_state.session_id
 
 # -------------------------
+# EXPANDER RESET ON NEW MRI
+# -------------------------
+expander_keys = [
+    "exp_scan_quality",
+    "exp_tumour_morphology",
+    "exp_seg_quality",
+    "exp_false_positives",
+    "exp_false_negatives"
+]
+
+if "prev_mri_file" not in st.session_state:
+    st.session_state.prev_mri_file = None
+
+if st.session_state.prev_mri_file != mri_file:
+    for key in expander_keys:
+        st.session_state[key] = False  # collapse all
+    st.session_state.prev_mri_file = mri_file
+
+# -------------------------
 # SIDEBAR: Metadata & Previous Data
 # -------------------------
 st.sidebar.header("Metadata and Data Management")
@@ -124,7 +143,7 @@ if mri is not None:
 # COLLAPSIBLE FORM
 # -------------------------
 with st.form("brisco_form"):
-    with st.expander("Scan eligibility and image quality", expanded=True):
+    with st.expander("Scan eligibility and image quality", expanded=st.session_state.get("exp_scan_quality", False), key="exp_scan_quality"):
         scan_excluded = st.radio("Scan excluded", ["No","Yes"])
         exclusion_reason = st.text_area("Reason for exclusion")
         fat_suppression = st.radio("Fat suppression applied", ["Yes","No"])
@@ -134,7 +153,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
         )
 
-    with st.expander("Tumour morphology", expanded=False):
+    with st.expander("Tumour morphology", expanded=st.session_state.get("exp_tumour_morphology", False), key="exp_tumour_morphology"):
         single_lesion = st.radio("Single contiguous lesion", ["Yes","No"])
         mass_enhancement = st.radio("Mass enhancement present", ["Yes","No"])
         non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes","No"])
@@ -143,7 +162,7 @@ with st.form("brisco_form"):
         nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
         necrosis = st.radio("Intratumoural necrosis present", ["Yes","No"])
 
-    with st.expander("Segmentation quality assessment", expanded=False):
+    with st.expander("Segmentation quality assessment", expanded=st.session_state.get("exp_seg_quality", False), key="exp_seg_quality"):
         satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
         num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
         required_additions = st.select_slider(
@@ -160,7 +179,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
         )
 
-    with st.expander("Causes for false positives", expanded=False):
+    with st.expander("Causes for false positives", expanded=st.session_state.get("exp_false_positives", False), key="exp_false_positives"):
         fp_vessels = st.checkbox("Blood vessels")
         fp_nodes = st.checkbox("Lymph nodes")
         fp_nodular = st.checkbox("Nodular enhancement")
@@ -171,7 +190,7 @@ with st.form("brisco_form"):
         fp_satellites = st.checkbox("Satellite lesions")
         fp_additional = st.text_input("Other causes for false positives (optional)")
 
-    with st.expander("Causes for false negatives", expanded=False):
+    with st.expander("Causes for false negatives", expanded=st.session_state.get("exp_false_negatives", False), key="exp_false_negatives"):
         fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes","No"])
         fn_additional = st.text_input("Other causes for false negatives (optional)")
 
