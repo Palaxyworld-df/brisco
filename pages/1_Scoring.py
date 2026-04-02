@@ -64,7 +64,7 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
 # -------------------------
 col1, col2 = st.columns([1, 2])  # left 1/3, right 2/3
 
-# --- Left column: MRI viewer (large image) ---
+# --- Left column: MRI viewer (full height) ---
 with col1:
     if mri is not None:
         st.subheader("MRI Viewer")
@@ -83,8 +83,15 @@ with col1:
             key="alpha_slider"
         )
         pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
-        # 🔥 Make image bigger by using column width and enlarging DPI
-        st.image(pil_img, use_column_width=True, output_format="PNG")
+
+        # 🔥 Resize image to fill viewport height (~90vh)
+        from PIL import ImageOps
+        img_w, img_h = pil_img.size
+        target_h = 900  # adjust depending on typical viewport height
+        scale_factor = target_h / img_h
+        target_w = int(img_w * scale_factor)
+        pil_img_resized = pil_img.resize((target_w, target_h))
+        st.image(pil_img_resized, use_column_width=False, output_format="PNG")
 
 # --- Right column: FORM ---
 with col2:
