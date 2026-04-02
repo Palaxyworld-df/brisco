@@ -71,6 +71,38 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
+# SIDEBAR: Metadata + Previous Data
+# -------------------------
+st.sidebar.header("Metadata & Data Management")
+
+rater_id = st.sidebar.text_input("Rater ID")
+case_id = st.sidebar.text_input("Case ID")
+segmentation_options = ["Manual"]
+selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
+if selected_method == "Other":
+    segmentation_method = st.sidebar.text_input("Enter the name of your segmentation method")
+else:
+    segmentation_method = selected_method
+
+# Load user's previous assessments for download/delete
+try:
+    response = supabase.table("scores").select("*").eq("user_id", user_id).execute()
+    df_prev = pd.DataFrame(response.data if response.data else [])
+    if not df_prev.empty:
+        csv_prev = df_prev.to_csv(index=False)
+        st.sidebar.download_button(
+            "Download My Previous Data",
+            csv_prev,
+            "my_scores.csv",
+            "text/csv"
+        )
+        if st.sidebar.button("Delete All My Data"):
+            supabase.table("scores").delete().eq("user_id", user_id).execute()
+            st.sidebar.success("✅ All your data has been deleted")
+except Exception as e:
+    st.sidebar.error(f"Failed to load previous data: {e}")
+
+# -------------------------
 # DISPLAY MRI
 # -------------------------
 if mri is not None:
@@ -85,23 +117,10 @@ if mri is not None:
     st.image(pil_img_resized, use_column_width=False)
 
 # -------------------------
-# METADATA INPUTS
-# -------------------------
-st.subheader("Metadata")
-rater_id = st.text_input("Rater ID")
-case_id = st.text_input("Case ID")
-segmentation_options = ["Manual"]
-selected_method = st.selectbox("Segmentation Method", segmentation_options + ["Other"])
-if selected_method == "Other":
-    segmentation_method = st.text_input("Enter the name of your segmentation method")
-else:
-    segmentation_method = selected_method
-
-# -------------------------
 # COLLAPSIBLE FORM
 # -------------------------
+st.subheader("Scoring Form")
 with st.form("brisco_form"):
-    # Step 1: Scan eligibility
     with st.expander("Step 1: Scan eligibility and image quality", expanded=True):
         scan_excluded = st.radio("Scan excluded", ["No","Yes"])
         exclusion_reason = st.text_area("Reason for exclusion")
@@ -112,7 +131,6 @@ with st.form("brisco_form"):
             format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
         )
 
-    # Step 2: Tumour morphology
     with st.expander("Step 2: Tumour morphology", expanded=False):
         single_lesion = st.radio("Single contiguous lesion", ["Yes","No"])
         mass_enhancement = st.radio("Mass enhancement present", ["Yes","No"])
@@ -122,7 +140,6 @@ with st.form("brisco_form"):
         nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
         necrosis = st.radio("Intratumoural necrosis present", ["Yes","No"])
 
-    # Step 3: Segmentation quality
     with st.expander("Step 3: Segmentation quality assessment", expanded=False):
         satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
         num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
@@ -140,7 +157,6 @@ with st.form("brisco_form"):
             format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
         )
 
-    # Step 4: False positives
     with st.expander("Step 4: Causes for false positives", expanded=False):
         fp_vessels = st.checkbox("Blood vessels")
         fp_nodes = st.checkbox("Lymph nodes")
@@ -152,7 +168,6 @@ with st.form("brisco_form"):
         fp_satellites = st.checkbox("Satellite lesions")
         fp_additional = st.text_input("Other causes for false positives (optional)")
 
-    # Step 5: False negatives
     with st.expander("Step 5: Causes for false negatives", expanded=False):
         fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes","No"])
         fn_additional = st.text_input("Other causes for false negatives (optional)")
@@ -206,19 +221,3 @@ if submitted:
         st.success("✅ Assessment saved successfully!")
     except Exception as e:
         st.error(f"❌ Failed to save data: {e}")
-
-# -------------------------
-# LOAD PREVIOUS ASSESSMENTS
-# -------------------------
-st.subheader("My Previous Assessments")
-try:
-    response = supabase.table("scores").select("*").eq("user_id", user_id).execute()
-    df = pd.DataFrame(response.data if response.data else [])
-    if not df.empty:
-        st.dataframe(df)
-        csv = df.to_csv(index=False)
-        st.download_button("Download My Data", csv, "my_scores.csv", "text/csv")
-    else:
-        st.info("No data yet")
-except Exception as e:
-    st.error(f"❌ Failed to load data: {e}")
