@@ -102,8 +102,31 @@ elif st.session_state.page == "register":
     with col_center:
         st.subheader("Register")
 
-        profession = st.text_input("Profession")
-        country = st.text_input("Country")
+# ---------------------------
+# DROPDOWN OPTIONS
+# ---------------------------
+
+        country_list = [
+            "India", "United States", "United Kingdom", "Germany", "France",
+            "Canada", "Australia", "China", "Japan", "Netherlands",
+            "Sweden", "Italy", "Spain", "Switzerland", "Austria",
+            "Singapore", "South Korea", "Brazil", "South Africa", "Other"
+        ]
+        
+        profession_list = [
+            "Radiologist",
+            "Academic Professor",
+            "Researcher",
+            "PostDoc",
+            "PhD Student"
+        ]
+        
+        # ---------------------------
+        # INPUT FIELDS
+        # ---------------------------
+        
+        profession = st.selectbox("Profession", profession_list)
+        country = st.selectbox("Country", country_list)
 
         if st.button("Create User"):
             if profession.strip() == "" or country.strip() == "":
