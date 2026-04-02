@@ -36,7 +36,7 @@ It is a plug-and-play web application designed for radiologists to evaluate the 
 
     """)
 st.markdown("""
-### Register/ Login
+### Register/ Login as an Existing User
 
 ----
 
@@ -54,11 +54,11 @@ with col_center:
     btn_col1, btn_col2 = st.columns(2)
 
     with btn_col1:
-        if st.button("To Enter as an Existing User"):
+        if st.button("Existing User"):
             st.session_state.page = "login"
 
     with btn_col2:
-        if st.button("To apply as a New User"):
+        if st.button("New User"):
             st.session_state.page = "register"
 
 # ---------------------------
