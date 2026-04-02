@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 
-st.title("Analytics Dashboard")
+st.title("Dashboard")
 
 # Connect to Supabase
 supabase = create_client(
