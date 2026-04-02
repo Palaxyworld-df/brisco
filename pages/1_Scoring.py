@@ -6,6 +6,9 @@ from datetime import datetime
 from supabase import create_client
 import numpy as np
 from PIL import Image
+import numpy as np
+import streamlit as st
+from skimage.transform import resize
 
 st.set_page_config(page_title="BRISCO", layout="wide")
 
@@ -45,22 +48,34 @@ mask = load_nifti(mask_file) if mask_file else None
 # -------------------------
 if mri is not None:
     st.subheader("MRI Viewer")
-    slice_idx = st.slider("Slice index", 0, mri.shape[2] - 1, mri.shape[2] // 2)
+    slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
     alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
 
-    # Convert slice + mask to RGB image
+    # Extract MRI slice
     slice_img = mri[:, :, slice_idx]
-    slice_img = (slice_img - slice_img.min()) / (slice_img.max() - slice_img.min())  # normalize 0-1
-    slice_rgb = np.stack([slice_img]*3, axis=-1)
+    slice_norm = (slice_img - slice_img.min()) / (slice_img.max() - slice_img.min())
+    slice_rgb = np.stack([slice_norm]*3, axis=-1)  # grayscale -> RGB
 
     if mask is not None:
         mask_slice = mask[:, :, slice_idx]
+        # Resize mask to match MRI slice if shapes mismatch
+        if mask_slice.shape != slice_img.shape:
+            mask_slice = resize(mask_slice, slice_img.shape, order=0, preserve_range=True, anti_aliasing=False)
         mask_rgb = np.zeros_like(slice_rgb)
-        mask_rgb[..., 0] = mask_slice  # Red channel for mask
+        mask_rgb[..., 0] = mask_slice  # Red overlay
         slice_rgb = (1-alpha)*slice_rgb + alpha*mask_rgb
 
+    # Convert to uint8 for st.image
     slice_rgb = (slice_rgb*255).astype(np.uint8)
-    st.image(slice_rgb, use_column_width=True, output_height=400)  # fixed height ~40% of typical page
+
+    # Resize to control display height (~40% of page)
+    display_height = 400  # pixels
+    h, w, _ = slice_rgb.shape
+    scale = display_height / h
+    new_w, new_h = int(w*scale), int(h*scale)
+    slice_resized = resize(slice_rgb, (new_h, new_w), preserve_range=True).astype(np.uint8)
+
+    st.image(slice_resized, use_column_width=True)
 
 # -------------------------
 # Sidebar session info
