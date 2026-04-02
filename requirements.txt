@@ -6,4 +6,3 @@ matplotlib
 gspread
 oauth2client
 supabase
-PIL
