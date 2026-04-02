@@ -65,11 +65,11 @@ if "page" not in st.session_state:
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("Existing User"):
+    if st.button("To Enter as an Existing User"):
         st.session_state.page = "login"
 
 with col2:
-    if st.button("New User"):
+    if st.button("To apply as a New User"):
         st.session_state.page = "register"
 
 # ---------------------------
