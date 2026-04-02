@@ -54,10 +54,25 @@ st.sidebar.write(f"**User ID:** {user_id}")
 rater_id = st.sidebar.text_input("Rater ID")
 case_id = st.sidebar.text_input("Case ID")
 
-segmentation_method = st.sidebar.selectbox(
+segmentation_options = ["Manual", "Model A"]
+
+# Dropdown for predefined methods
+selected_method = st.selectbox(
     "Segmentation Method",
-    ["Manual", "Model A", "Model B"]
+    options=segmentation_options + ["Other"]  # Add "Other" option
 )
+
+# If user selects "Other", show text input
+if selected_method == "Other":
+    custom_method = st.text_input("Enter your segmentation method")
+    if custom_method:
+        segmentation_method = custom_method
+    else:
+        segmentation_method = None  # Or handle empty input
+else:
+    segmentation_method = selected_method
+
+st.write(f"Selected segmentation method: {segmentation_method}")
 
 # ---------------------------
 # FILE UPLOAD
