@@ -92,13 +92,35 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_factor=2)
 if mri is not None:
     st.subheader("MRI Viewer")
 
-    slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
-    alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
+    # Wrap EVERYTHING in sticky container (not just image)
+    st.markdown('<div class="sticky-container">', unsafe_allow_html=True)
 
-    pil_img = get_slice_rgb(mri, mask, slice_idx, alpha, downsample_factor=1)  # 👈 less aggressive
+    slice_idx = st.slider(
+        "Slice index",
+        0,
+        mri.shape[2]-1,
+        mri.shape[2]//2,
+        key="slice_slider"
+    )
 
-    st.markdown('<div class="sticky-viewer">', unsafe_allow_html=True)
+    alpha = st.slider(
+        "Mask opacity",
+        0.0,
+        1.0,
+        0.4,
+        key="alpha_slider"
+    )
+
+    pil_img = get_slice_rgb(
+        mri,
+        mask,
+        slice_idx,
+        alpha,
+        downsample_factor=1  # 🔥 important change
+    )
+
     st.write(pil_img)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
