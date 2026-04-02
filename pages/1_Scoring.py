@@ -22,7 +22,7 @@ if "user_id" not in st.session_state:
 
 user_id = st.session_state.user_id
 
-st.title("BRISCo - Breast MRI Segmentation Scoring")
+st.title("BRISCO Form")
 
 # ---------------------------
 # FILE LOADER
