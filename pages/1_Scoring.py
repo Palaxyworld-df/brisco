@@ -86,10 +86,6 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_factor=2)
 
     return Image.fromarray(slice_rgb)
 
-pil_img = get_slice_rgb(mri, mask, slice_idx, alpha, downsample_factor=2)
-st.write(pil_img)
-
-
 # -------------------------
 # Viewer UI
 # -------------------------
