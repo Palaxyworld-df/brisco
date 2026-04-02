@@ -2,9 +2,22 @@ import streamlit as st
 import nibabel as nib
 import tempfile
 import numpy as np
+import pandas as pd
 from PIL import Image
+from datetime import datetime
+from supabase import create_client
 
+# -------------------------
+# CONFIG
+# -------------------------
 st.set_page_config(page_title="BRISCO", layout="wide")
+
+# -------------------------
+# SUPABASE SETUP
+# -------------------------
+SUPABASE_URL = "YOUR_SUPABASE_URL"
+SUPABASE_KEY = "YOUR_SUPABASE_KEY"
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # -------------------------
 # AUTH CHECK
@@ -12,9 +25,9 @@ st.set_page_config(page_title="BRISCO", layout="wide")
 if "user_id" not in st.session_state:
     st.warning("Please login from the home page")
     st.stop()
-user_id = st.session_state.user_id
 
-st.title("BRISCO Form")
+user_id = st.session_state.user_id
+st.title("BRISCO Form (Stepper)")
 
 # -------------------------
 # FILE UPLOADER
@@ -58,19 +71,19 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
-# Initialize stepper state
+# INITIALIZE STATE
 # -------------------------
 if "step" not in st.session_state:
     st.session_state.step = 0
-
-# Store answers
 if "answers" not in st.session_state:
     st.session_state.answers = {}
 
-# Step titles and question functions
+# -------------------------
+# FORM STEPS
+# -------------------------
 def step_0():
-    st.header("Scan eligibility and image quality")
-    st.session_state.answers["scan_excluded"] = st.radio("Scan excluded", ["Yes", "No"])
+    st.header("Step 1: Scan eligibility and image quality")
+    st.session_state.answers["scan_excluded"] = st.radio("Scan excluded", ["No", "Yes"])
     st.session_state.answers["exclusion_reason"] = st.text_area("Reason for exclusion")
     st.session_state.answers["fat_suppression"] = st.radio("Fat suppression applied", ["Yes", "No"])
     st.session_state.answers["fat_suppression_quality"] = st.select_slider(
@@ -80,7 +93,7 @@ def step_0():
     )
 
 def step_1():
-    st.header("Tumour morphology")
+    st.header("Step 2: Tumour morphology")
     st.session_state.answers["single_lesion"] = st.radio("Single contiguous lesion", ["Yes","No"])
     st.session_state.answers["mass_enhancement"] = st.radio("Mass enhancement present", ["Yes","No"])
     st.session_state.answers["non_mass_enhancement"] = st.radio("Non-mass enhancement present", ["Yes","No"])
@@ -90,7 +103,7 @@ def step_1():
     st.session_state.answers["necrosis"] = st.radio("Intratumoural necrosis present", ["Yes","No"])
 
 def step_2():
-    st.header("Segmentation quality assessment")
+    st.header("Step 3: Segmentation quality assessment")
     st.session_state.answers["satellite_included_omitted"] = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
     st.session_state.answers["num_satellites_included"] = st.number_input("Number of satellite lesions included", min_value=0, step=1)
     st.session_state.answers["required_additions"] = st.select_slider(
@@ -108,7 +121,7 @@ def step_2():
     )
 
 def step_3():
-    st.header("Causes for false positives")
+    st.header("Step 4: Causes for false positives")
     st.session_state.answers["fp_vessels"] = st.checkbox("Blood vessels")
     st.session_state.answers["fp_nodes"] = st.checkbox("Lymph nodes")
     st.session_state.answers["fp_nodular"] = st.checkbox("Nodular enhancement")
@@ -120,15 +133,14 @@ def step_3():
     st.session_state.answers["fp_additional"] = st.text_input("Other causes for false positives (optional)")
 
 def step_4():
-    st.header("Causes for false negatives")
+    st.header("Step 5: Causes for false negatives")
     st.session_state.answers["fn_necrosis"] = st.radio("Necrosis / fibrosis", ["Yes","No"])
     st.session_state.answers["fn_additional"] = st.text_input("Other causes for false negatives (optional)")
 
-# List of steps
 steps = [step_0, step_1, step_2, step_3, step_4]
 
 # -------------------------
-# Layout: two columns
+# LAYOUT: MRI | FORM
 # -------------------------
 col1, col2 = st.columns([1,1], gap="medium")
 
@@ -145,8 +157,19 @@ with col1:
         st.image(pil_img_resized, use_column_width=False)
 
 with col2:
+    # Metadata inputs
+    rater_id = st.text_input("Rater ID", key="rater_id")
+    case_id = st.text_input("Case ID", key="case_id")
+    segmentation_options = ["Manual"]
+    selected_method = st.selectbox("Segmentation Method", segmentation_options + ["Other"])
+    if selected_method == "Other":
+        segmentation_method = st.text_input("Enter the name of your segmentation method")
+    else:
+        segmentation_method = selected_method
+
     # Render current step
     steps[st.session_state.step]()
+
     # Navigation buttons
     col_prev, col_next = st.columns([1,1])
     with col_prev:
@@ -159,20 +182,44 @@ with col2:
                 st.session_state.step += 1
         else:
             if st.button("Submit"):
-                st.success("Assessment saved!")
-                
+                # ---------------------------
+                # SAVE TO SUPABASE
+                # ---------------------------
+                if rater_id.strip() == "" or case_id.strip() == "":
+                    st.warning("Please fill Case ID and Rater ID")
+                    st.stop()
+                try:
+                    # Merge answers + metadata
+                    data_to_save = st.session_state.answers.copy()
+                    data_to_save.update({
+                        "timestamp": datetime.now().isoformat(),
+                        "user_id": user_id,
+                        "rater_id": rater_id,
+                        "case_id": case_id,
+                        "segmentation_method": segmentation_method
+                    })
+                    supabase.table("scores").insert(data_to_save).execute()
+                    st.success("✅ Assessment saved successfully!")
+                except Exception as e:
+                    st.error(f"❌ Failed to save data: {e}")
 
 # -------------------------
-# Sidebar
+# LOAD PREVIOUS ASSESSMENTS
 # -------------------------
-st.sidebar.header("Session Info")
-st.sidebar.write(f"**User ID:** {user_id}")
-rater_id = st.sidebar.text_input("Rater ID")
-case_id = st.sidebar.text_input("Case ID")
-segmentation_options = ["Manual"]
-selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
-if selected_method == "Other":
-    segmentation_method = st.sidebar.text_input("Enter the name of your segmentation method")
-else:
-    segmentation_method = selected_method
-st.sidebar.write(f"Selected segmentation method: {segmentation_method}")
+st.subheader("My Previous Assessments")
+try:
+    response = supabase.table("scores").select("*").eq("user_id", user_id).execute()
+    df = pd.DataFrame(response.data if response.data else [])
+    if not df.empty:
+        st.dataframe(df)
+        csv = df.to_csv(index=False)
+        st.download_button(
+            "Download My Data",
+            csv,
+            "my_scores.csv",
+            "text/csv"
+        )
+    else:
+        st.info("No data yet")
+except Exception as e:
+    st.error(f"❌ Failed to load data: {e}")
