@@ -54,7 +54,7 @@ st.sidebar.write(f"**User ID:** {user_id}")
 rater_id = st.sidebar.text_input("Rater ID")
 case_id = st.sidebar.text_input("Case ID")
 
-segmentation_options = ["Manual", "Model A"]
+segmentation_options = ["Manual"]
 
 # Dropdown for predefined methods (in sidebar)
 selected_method = st.sidebar.selectbox(
