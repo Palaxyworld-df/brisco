@@ -23,6 +23,12 @@ except Exception as e:
     users_df = pd.DataFrame(columns=["user_id", "profession", "country"])
 
 # ---------------------------
+# NAVIGATION STATE
+# ---------------------------
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+    
+# ---------------------------
 # UI: WELCOME PAGE
 # ---------------------------
 st.title("Welcome to BRISCO") 
@@ -36,12 +42,6 @@ st.markdown("""
 ### Register / Login as an Existing User
 ----
 """)
-
-# ---------------------------
-# NAVIGATION STATE
-# ---------------------------
-if "page" not in st.session_state:
-    st.session_state.page = "home"
 
 # ---------------------------
 # HOME PAGE
