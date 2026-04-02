@@ -9,18 +9,10 @@ from supabase import create_client
 
 st.set_page_config(page_title="BRISCo Scoring", layout="wide")
 
-# ---------------------------
-# SUPABASE
-# ---------------------------
-try:
-    supabase = create_client(
-        st.secrets["SUPABASE_URL"],
-        st.secrets["SUPABASE_KEY"]
-    )
-except:
-    st.error("❌ Database connection failed")
-    st.stop()
-
+# -------supabase---------- 
+url = st.secrets["SUPABASE_URL"] 
+key = st.secrets["SUPABASE_KEY"] 
+supabase = create_client(url, key)
 # ---------------------------
 # AUTH CHECK
 # ---------------------------
