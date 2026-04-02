@@ -77,7 +77,9 @@ elif st.session_state.page == "login":
         st.subheader("Login")
         user_id_input = st.text_input("Enter User ID")
 
-        if st.button("Login"):
+        login_clicked = st.button("Login")
+
+        if login_clicked:
             if users_df.empty:
                 st.error("No users registered yet")
             elif user_id_input in users_df["user_id"].astype(str).values:
@@ -86,6 +88,10 @@ elif st.session_state.page == "login":
             else:
                 st.error("User not found")
 
+        # ✅ Always visible fallback
+        st.markdown("---")
+        if st.button("New user? Register here"):
+            st.session_state.page = "register"
 # ---------------------------
 # REGISTER PAGE
 # ---------------------------
