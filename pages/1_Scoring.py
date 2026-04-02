@@ -68,13 +68,21 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
             pass
     return Image.fromarray(slice_rgb)
 
+import uuid
+
 # -------------------------
 # SIDEBAR: Metadata + Previous Data
 # -------------------------
-st.sidebar.header("Metadata & Data Management")
+st.sidebar.header("Metadata and Data Management")
 
-rater_id = st.sidebar.text_input("Rater ID")
-case_id = st.sidebar.text_input("Case ID")
+# Generate a unique session id if not already
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+session_id = st.session_state.session_id
+
+# Metadata inputs
+rater_id = st.sidebar.text_input("Rater ID", key="rater_id")
+case_id = st.sidebar.text_input("Case ID", key="case_id")
 segmentation_options = ["Manual"]
 selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
 if selected_method == "Other":
@@ -82,23 +90,34 @@ if selected_method == "Other":
 else:
     segmentation_method = selected_method
 
-# Load user's previous assessments for download/delete
+# -------------------------
+# LOAD CURRENT SESSION DATA
+# -------------------------
 try:
-    response = supabase.table("scores").select("*").eq("user_id", user_id).execute()
+    response = supabase.table("scores").select("*")\
+        .eq("user_id", user_id)\
+        .eq("session_id", session_id)\
+        .execute()
     df_prev = pd.DataFrame(response.data if response.data else [])
+    
     if not df_prev.empty:
         csv_prev = df_prev.to_csv(index=False)
         st.sidebar.download_button(
-            "Download My Previous Data",
+            "Download My Current Session Data",
             csv_prev,
-            "my_scores.csv",
+            "my_scores_session.csv",
             "text/csv"
         )
-        if st.sidebar.button("Delete All My Data"):
-            supabase.table("scores").delete().eq("user_id", user_id).execute()
-            st.sidebar.success("✅ All your data has been deleted")
+    
+    # Delete only current session data
+    if st.sidebar.button("Delete My Current Session Data"):
+        supabase.table("scores").delete()\
+            .eq("user_id", user_id)\
+            .eq("session_id", session_id)\
+            .execute()
+        st.sidebar.success("✅ Current session data deleted")
 except Exception as e:
-    st.sidebar.error(f"Failed to load previous data: {e}")
+    st.sidebar.error(f"Failed to load previous session data: {e}")
 
 # -------------------------
 # DISPLAY MRI
