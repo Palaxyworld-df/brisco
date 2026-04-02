@@ -50,7 +50,7 @@ if mri is not None:
     h, w = mri.shape[:2]
     aspect = w / h
 
-    fig_height = 3  # fixed height (~40% of typical page)
+    fig_height = 1  # fixed height 
     fig_width = fig_height * aspect
 
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
