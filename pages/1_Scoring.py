@@ -44,7 +44,7 @@ mask = load_nifti(mask_file) if mask_file else None
 # -------------------------
 # MRI Viewer with fixed aspect ratio
 # -------------------------
-def overlay_slice_to_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_factor=2):
+def overlay_slice_to_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_factor=3):
     """Robust + small MRI viewer"""
 
     slice_gray = image[:, :, slice_idx]
