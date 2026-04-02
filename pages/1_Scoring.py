@@ -93,31 +93,62 @@ else:
 # -------------------------
 # LOAD CURRENT SESSION DATA
 # -------------------------
+# -------------------------
+# SIDEBAR: Metadata & Data Management
+# -------------------------
+import uuid
+
+st.sidebar.header("Metadata & Data Management")
+
+# Generate a unique session id if not already
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+session_id = st.session_state.session_id
+
+# Metadata inputs
+rater_id = st.sidebar.text_input("Rater ID", key="rater_id")
+case_id = st.sidebar.text_input("Case ID", key="case_id")
+segmentation_options = ["Manual"]
+selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
+if selected_method == "Other":
+    segmentation_method = st.sidebar.text_input("Enter the name of your segmentation method")
+else:
+    segmentation_method = selected_method
+
+# -------------------------
+# LOAD USER DATA
+# -------------------------
 try:
-    response = supabase.table("scores").select("*")\
-        .eq("user_id", user_id)\
-        .eq("session_id", session_id)\
-        .execute()
-    df_prev = pd.DataFrame(response.data if response.data else [])
-    
-    if not df_prev.empty:
-        csv_prev = df_prev.to_csv(index=False)
+    # All previous submissions
+    response_all = supabase.table("scores").select("*").eq("user_id", user_id).execute()
+    df_all = pd.DataFrame(response_all.data if response_all.data else [])
+    if not df_all.empty:
+        csv_all = df_all.to_csv(index=False)
+        st.sidebar.download_button(
+            "Download All My Previous Data",
+            csv_all,
+            "my_scores_all.csv",
+            "text/csv"
+        )
+
+    # Current session submissions
+    df_session = df_all[df_all["session_id"] == session_id] if not df_all.empty else pd.DataFrame()
+    if not df_session.empty:
+        csv_session = df_session.to_csv(index=False)
         st.sidebar.download_button(
             "Download My Current Session Data",
-            csv_prev,
+            csv_session,
             "my_scores_session.csv",
             "text/csv"
         )
-    
-    # Delete only current session data
-    if st.sidebar.button("Delete My Current Session Data"):
-        supabase.table("scores").delete()\
-            .eq("user_id", user_id)\
-            .eq("session_id", session_id)\
-            .execute()
-        st.sidebar.success("✅ Current session data deleted")
+        if st.sidebar.button("Delete My Current Session Data"):
+            supabase.table("scores").delete()\
+                .eq("user_id", user_id)\
+                .eq("session_id", session_id)\
+                .execute()
+            st.sidebar.success("✅ Current session data deleted")
 except Exception as e:
-    st.sidebar.error(f"Failed to load previous session data: {e}")
+    st.sidebar.error(f"Failed to load data: {e}")
 
 # -------------------------
 # DISPLAY MRI
@@ -233,6 +264,7 @@ if submitted:
             "fn_necrosis": fn_necrosis,
             "fn_additional": fn_additional
         }
+        data_to_save["session_id"] = session_id
         supabase.table("scores").insert(data_to_save).execute()
         st.success("✅ Assessment saved successfully!")
     except Exception as e:
