@@ -45,34 +45,34 @@ mask = load_nifti(mask_file) if mask_file else None
 # -------------------------
 # MRI Viewer with fixed aspect ratio
 # -------------------------
-import matplotlib.pyplot as plt
-import numpy as np
 import streamlit as st
+import numpy as np
 
-def overlay_slice(image, mask, slice_idx=0, alpha=0.4):
-    # Create figure with small size (width, height in inches)
-    fig, ax = plt.subplots(figsize=(1, 1)) 
-    ax.imshow(image[:, :, slice_idx], cmap="gray")
+def overlay_slice_to_rgb(image, mask=None, slice_idx=0, alpha=0.4):
+    """Return an RGB image of the MRI slice with optional mask overlay"""
+    slice_gray = image[:, :, slice_idx]
+    # Normalize to 0-255
+    slice_gray = (255 * (slice_gray - slice_gray.min()) / (slice_gray.ptp() + 1e-8)).astype(np.uint8)
+    slice_rgb = np.stack([slice_gray]*3, axis=-1)
 
     if mask is not None:
         mask_slice = mask[:, :, slice_idx]
-        # Overlay mask in red
-        mask_rgb = np.zeros((*mask_slice.shape, 3))
-        mask_rgb[..., 0] = mask_slice  # red channel
-        ax.imshow(mask_rgb, alpha=alpha)
+        # Create a red overlay
+        mask_rgb = np.zeros_like(slice_rgb)
+        mask_rgb[..., 0] = (mask_slice * 255).astype(np.uint8)  # red channel
+        slice_rgb = ((1-alpha)*slice_rgb + alpha*mask_rgb).astype(np.uint8)
 
-    ax.axis("off")
-    return fig
+    return slice_rgb
 
-# Example usage
-mri = np.random.rand(180, 180, 60)  # replace with your MRI array
-mask = np.random.randint(0, 2, (180, 180, 60))
+# Example MRI and mask
+mri = np.random.rand(180, 180, 60)
+mask = np.random.randint(0,2,(180,180,60))
 
 slice_idx = 30
-fig = overlay_slice(mri, mask, slice_idx=slice_idx)
+mri_rgb = overlay_slice_to_rgb(mri, mask, slice_idx, alpha=0.4)
 
-# Display in Streamlit
-st.pyplot(fig, use_container_width=True)  # prevents auto-stretching
+# Display in Streamlit with fixed width
+st.image(mri_rgb, width=400)  # width in pixels; adjust as needed
 
 # -------------------------
 # Sidebar session info
