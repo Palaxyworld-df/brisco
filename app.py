@@ -69,17 +69,17 @@ if "page" not in st.session_state:
     st.session_state.page = "home"
     
 col_left, col_center, col_right = st.columns([1, 2, 1])
-with col2:
-    st.subheader("Login")
-    user_id_input = st.text_input("Enter User ID")
-    if st.button("Login"):
-        if users_df.empty:
-            st.error("No users registered yet")
-        elif user_id_input in users_df["user_id"].astype(str).values:
-            st.session_state.user_id = user_id_input
-            st.switch_page("pages/1_Scoring.py")
-        else:
-            st.error("User not found")
+    with col2:
+        st.subheader("Login")
+        user_id_input = st.text_input("Enter User ID")
+        if st.button("Login"):
+            if users_df.empty:
+                st.error("No users registered yet")
+            elif user_id_input in users_df["user_id"].astype(str).values:
+                st.session_state.user_id = user_id_input
+                st.switch_page("pages/1_Scoring.py")
+            else:
+                st.error("User not found")
 
 # ---------------------------
 # REGISTER
