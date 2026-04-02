@@ -60,25 +60,12 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
-# CSS for sticky viewer
-# -------------------------
-st.markdown("""
-<style>
-.sticky-viewer {
-    position: sticky;
-    top: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# -------------------------
 # MAIN LAYOUT WITH COLUMNS
 # -------------------------
 col1, col2 = st.columns([1, 2])  # left 1/3, right 2/3
 
-# --- Left column: sticky MRI viewer ---
+# --- Left column: MRI viewer (large image) ---
 with col1:
-    st.markdown('<div class="sticky-viewer">', unsafe_allow_html=True)
     if mri is not None:
         st.subheader("MRI Viewer")
         slice_idx = st.slider(
@@ -96,10 +83,10 @@ with col1:
             key="alpha_slider"
         )
         pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
-        st.image(pil_img, use_column_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        # 🔥 Make image bigger by using column width and enlarging DPI
+        st.image(pil_img, use_column_width=True, output_format="PNG")
 
-# --- Right column: your full form ---
+# --- Right column: FORM ---
 with col2:
     with st.form("qc_form"):
         # -----------------------
