@@ -1,17 +1,11 @@
 import streamlit as st
 import nibabel as nib
 import tempfile
-from datetime import datetime
 from supabase import create_client
 import numpy as np
 from PIL import Image
 
 st.set_page_config(page_title="BRISCO", layout="wide")
-
-# --- Supabase connection ---
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase = create_client(url, key)
 
 # -------------------------
 # AUTH CHECK
@@ -21,7 +15,6 @@ if "user_id" not in st.session_state:
     st.stop()
 
 user_id = st.session_state.user_id
-
 st.title("BRISCO Form")
 
 # -------------------------
@@ -55,17 +48,14 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
         max_val = min_val + 1e-8
 
     slice_gray = ((slice_gray - min_val) / (max_val - min_val) * 255).astype(np.uint8)
-
     slice_rgb = np.stack([slice_gray]*3, axis=-1)
 
     if mask is not None:
         try:
             mask_slice = mask[:, :, slice_idx]
             mask_slice = np.nan_to_num(mask_slice, nan=0.0)
-
             mask_rgb = np.zeros_like(slice_rgb)
             mask_rgb[..., 0] = (mask_slice * 255).astype(np.uint8)
-
             slice_rgb = ((1-alpha)*slice_rgb + alpha*mask_rgb).astype(np.uint8)
         except:
             pass
@@ -73,37 +63,151 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
-# LAYOUT (VIEWER LEFT, FORM RIGHT)
+# CUSTOM CSS FOR LAYOUT + STICKY VIEWER
 # -------------------------
-col1, col2 = st.columns([2, 3])  # ~40% / 60%
+st.markdown("""
+<style>
+/* Flex layout */
+.flex-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+/* Sticky viewer on left */
+.viewer-panel {
+    position: sticky;
+    top: 20px;
+    flex: 0 0 40%;
+    max-width: 40%;
+    z-index: 999;
+}
+
+/* Scrollable form on right */
+.form-panel {
+    flex: 1 1 60%;
+    max-width: 60%;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # -------------------------
-# VIEWER
+# FLEX CONTAINER
 # -------------------------
-with col1:
-    if mri is not None:
-        st.subheader("MRI Viewer")
+st.markdown('<div class="flex-container">', unsafe_allow_html=True)
 
-        slice_idx = st.slider(
-            "Slice index",
-            0,
-            mri.shape[2]-1,
-            mri.shape[2]//2
+# -------------------------
+# VIEWER PANEL
+# -------------------------
+st.markdown('<div class="viewer-panel">', unsafe_allow_html=True)
+if mri is not None:
+    st.subheader("MRI Viewer")
+
+    slice_idx = st.slider(
+        "Slice index",
+        0,
+        mri.shape[2]-1,
+        mri.shape[2]//2,
+        key="slice_slider"
+    )
+
+    alpha = st.slider(
+        "Mask opacity",
+        0.0,
+        1.0,
+        0.4,
+        key="alpha_slider"
+    )
+
+    pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
+    st.image(pil_img, use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------------
+# FORM PANEL
+# -------------------------
+st.markdown('<div class="form-panel">', unsafe_allow_html=True)
+
+with st.form("qc_form"):
+    # Section 1
+    with st.expander("Scan eligibility and image quality", expanded=True):
+        scan_excluded = st.radio("Scan excluded", ["No", "Yes"])
+        exclusion_reason = st.text_area("Reason for exclusion")
+        fat_suppression = st.radio("Fat suppression applied", ["Yes", "No"])
+        fat_suppression_quality = st.select_slider(
+            "Fat suppression quality",
+            options=[0, 1, 2, 3],
+            format_func=lambda x: ["None", "Minor Failure", "Moderate Failure", "Major Failure"][x]
         )
 
-        alpha = st.slider(
-            "Mask opacity",
-            0.0,
-            1.0,
-            0.4
+    # Section 2
+    with st.expander("Tumour morphology", expanded=True):
+        single_lesion = st.radio("Single contiguous lesion", ["Yes", "No"])
+        mass_enhancement = st.radio("Mass enhancement present", ["Yes", "No"])
+        non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes", "No"])
+        satellite_lesions = st.radio("Satellite lesions present", ["Yes", "No"])
+        num_satellites = st.number_input("Number of satellite lesions", min_value=0, step=1)
+        nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes", "No"])
+        necrosis = st.radio("Intratumoural necrosis present", ["Yes", "No"])
+
+    # Section 3
+    with st.expander("Segmentation quality assessment", expanded=True):
+        satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included", "Omitted"])
+        num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
+        required_additions = st.select_slider(
+            "Required additions (under-segmentation)",
+            options=[0, 1, 2, 3, 4],
+            format_func=lambda x: [
+                "Acceptable - No deletion required",
+                "Minor correction (≤25% of volume to be deleted)",
+                "Intermediate correction (25–≤50% of volume to be deleted)",
+                "Major correction (50–≤75% of volume to be deleted)",
+                "Not acceptable (>75% of volume to be deleted)"
+            ][x]
+        )
+        required_deletions = st.select_slider(
+            "Required deletions (over-segmentation)",
+            options=[0, 1, 2, 3, 4],
+            format_func=lambda x: [
+                "Acceptable - No addition required",
+                "Minor correction (≤25% of volume to be added)",
+                "Intermediate correction (25–≤50% to be added)",
+                "Major correction (50–≤75% to be added)",
+                "Not acceptable (>75% to be added)"
+            ][x]
+        )
+        complex_corrections = st.radio("Low-volume but complex corrections required", ["Yes", "No"])
+        overall_quality = st.select_slider(
+            "Overall segmentation quality",
+            options=[1, 2, 3, 4, 5],
+            format_func=lambda x: ["Acceptable", "Minor issues", "Moderate issues", "Major issues", "Not acceptable"][x-1]
         )
 
-        pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
+    # Section 4
+    with st.expander("Causes for false positives", expanded=True):
+        fp_vessels = st.checkbox("Blood vessels")
+        fp_nodes = st.checkbox("Lymph nodes")
+        fp_nodular = st.checkbox("Nodular enhancement")
+        fp_shape = st.checkbox("Complex lesion shape")
+        fp_skin = st.checkbox("Skin")
+        fp_nipple = st.checkbox("Nipple–areolar complex")
+        fp_nme = st.checkbox("Non-mass enhancement")
+        fp_satellites = st.checkbox("Satellite lesions")
+        fp_additional = st.text_input("Other causes for false positives (optional)")
 
-        st.image(pil_img, use_container_width=True)
+    # Section 5
+    with st.expander("Causes for false negatives", expanded=True):
+        fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes", "No"])
+        fn_additional = st.text_input("Other causes for false negatives (optional)")
+
+    submitted = st.form_submit_button("Save Assessment")
+
+st.markdown('</div>', unsafe_allow_html=True)  # close form-panel
+st.markdown('</div>', unsafe_allow_html=True)  # close flex-container
 
 # -------------------------
-# SIDEBAR (UNCHANGED)
+# SIDEBAR
 # -------------------------
 st.sidebar.header("Session Info")
 st.sidebar.write(f"**User ID:** {user_id}")
@@ -118,81 +222,3 @@ else:
     segmentation_method = selected_method
 
 st.sidebar.write(f"Selected segmentation method: {segmentation_method}")
-
-# -------------------------
-# FORM (UNCHANGED - EXACTLY YOUR CODE)
-# -------------------------
-with col2:
-    with st.form("qc_form"):
-        # Section 1
-        with st.expander("Scan eligibility and image quality", expanded=True):
-            scan_excluded = st.radio("Scan excluded", ["No", "Yes"])
-            exclusion_reason = st.text_area("Reason for exclusion")
-            fat_suppression = st.radio("Fat suppression applied", ["Yes", "No"])
-            fat_suppression_quality = st.select_slider(
-                "Fat suppression quality",
-                options=[0, 1, 2, 3],
-                format_func=lambda x: ["None", "Minor Failure", "Moderate Failure", "Major Failure"][x]
-            )
-
-        # Section 2
-        with st.expander("Tumour morphology", expanded=True):
-            single_lesion = st.radio("Single contiguous lesion", ["Yes", "No"])
-            mass_enhancement = st.radio("Mass enhancement present", ["Yes", "No"])
-            non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes", "No"])
-            satellite_lesions = st.radio("Satellite lesions present", ["Yes", "No"])
-            num_satellites = st.number_input("Number of satellite lesions", min_value=0, step=1)
-            nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes", "No"])
-            necrosis = st.radio("Intratumoural necrosis present", ["Yes", "No"])
-
-        # Section 3
-        with st.expander("Segmentation quality assessment", expanded=True):
-            satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included", "Omitted"])
-            num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
-            required_additions = st.select_slider(
-                "Required additions (under-segmentation)",
-                options=[0, 1, 2, 3, 4],
-                format_func=lambda x: [
-                    "Acceptable - No deletion required",
-                    "Minor correction (≤25% of volume to be deleted)",
-                    "Intermediate correction (25–≤50% of volume to be deleted)",
-                    "Major correction (50–≤75% of volume to be deleted)",
-                    "Not acceptable (>75% of volume to be deleted)"
-                ][x]
-            )
-            required_deletions = st.select_slider(
-                "Required deletions (over-segmentation)",
-                options=[0, 1, 2, 3, 4],
-                format_func=lambda x: [
-                    "Acceptable - No addition required",
-                    "Minor correction (≤25% of volume to be added)",
-                    "Intermediate correction (25–≤50% to be added)",
-                    "Major correction (50–≤75% to be added)",
-                    "Not acceptable (>75% to be added)"
-                ][x]
-            )
-            complex_corrections = st.radio("Low-volume but complex corrections required", ["Yes", "No"])
-            overall_quality = st.select_slider(
-                "Overall segmentation quality",
-                options=[1, 2, 3, 4, 5],
-                format_func=lambda x: ["Acceptable", "Minor issues", "Moderate issues", "Major issues", "Not acceptable"][x-1]
-            )
-
-        # Section 4
-        with st.expander("Causes for false positives", expanded=True):
-            fp_vessels = st.checkbox("Blood vessels")
-            fp_nodes = st.checkbox("Lymph nodes")
-            fp_nodular = st.checkbox("Nodular enhancement")
-            fp_shape = st.checkbox("Complex lesion shape")
-            fp_skin = st.checkbox("Skin")
-            fp_nipple = st.checkbox("Nipple–areolar complex")
-            fp_nme = st.checkbox("Non-mass enhancement")
-            fp_satellites = st.checkbox("Satellite lesions")
-            fp_additional = st.text_input("Other causes for false positives (optional)")
-
-        # Section 5
-        with st.expander("Causes for false negatives", expanded=True):
-            fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes", "No"])
-            fn_additional = st.text_input("Other causes for false negatives (optional)")
-
-        submitted = st.form_submit_button("Save Assessment")
