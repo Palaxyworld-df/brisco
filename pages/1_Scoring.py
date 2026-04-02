@@ -77,15 +77,15 @@ st.sidebar.write(f"Selected segmentation method: {segmentation_method}")
 # ---------------------------
 # FILE UPLOAD
 # ---------------------------
-st.header("Upload MRI & Segmentation")
+st.header("Upload MRI Scan and its Segmentation Mask")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    mri_file = st.file_uploader("Upload MRI (.nii / .nii.gz)", type=["nii", "nii.gz"])
+    mri_file = st.file_uploader("Upload MRI Scan (.nii / .nii.gz allowed)", type=["nii", "nii.gz"])
 
 with col2:
-    mask_file = st.file_uploader("Upload Mask (.nii / .nii.gz)", type=["nii", "nii.gz"])
+    mask_file = st.file_uploader("Upload Mask (.nii / .nii.gz allowed)", type=["nii", "nii.gz"])
 
 mri = load_nifti(mri_file) if mri_file else None
 mask = load_nifti(mask_file) if mask_file else None
