@@ -95,7 +95,7 @@ if mri is not None:
     slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
     alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
 
-    pil_img = get_slice_rgb(mri, mask, slice_idx, alpha, downsample_factor=2)  # 👈 less aggressive
+    pil_img = get_slice_rgb(mri, mask, slice_idx, alpha, downsample_factor=1)  # 👈 less aggressive
 
     st.markdown('<div class="sticky-viewer">', unsafe_allow_html=True)
     st.write(pil_img)
