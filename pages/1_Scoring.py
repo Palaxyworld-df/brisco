@@ -46,12 +46,19 @@ if mri is not None:
     slice_idx = st.slider("Slice index", 0, mri.shape[2] - 1, mri.shape[2] // 2)
     alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
 
-    fig, ax = plt.subplots(figsize=(2, 2))  # fixed square aspect ratio
+    # Calculate aspect ratio
+    h, w = mri.shape[:2]
+    aspect = w / h
+
+    fig_height = 3  # fixed height (~40% of typical page)
+    fig_width = fig_height * aspect
+
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
     ax.imshow(mri[:, :, slice_idx], cmap="gray")
     if mask is not None:
         ax.imshow(mask[:, :, slice_idx], cmap="jet", alpha=alpha)
     ax.axis("off")
-    st.pyplot(fig, use_container_width=True)  # scale nicely for web
+    st.pyplot(fig, use_container_width=True)
 
 # -------------------------
 # Sidebar session info
