@@ -15,11 +15,9 @@ st.set_page_config(page_title="BRISCO", layout="wide")
 # -------------------------
 # SUPABASE SETUP
 # -------------------------
-# -------supabase---------- 
-url = st.secrets["SUPABASE_URL"] 
-key = st.secrets["SUPABASE_KEY"] 
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
-
 
 # -------------------------
 # AUTH CHECK
@@ -27,9 +25,9 @@ supabase = create_client(url, key)
 if "user_id" not in st.session_state:
     st.warning("Please login from the home page")
     st.stop()
-
 user_id = st.session_state.user_id
-st.title("BRISCO Form (Stepper)")
+
+st.title("BRISCO Form (Single Column)")
 
 # -------------------------
 # FILE UPLOADER
@@ -73,137 +71,141 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
-# INITIALIZE STATE
+# DISPLAY MRI
 # -------------------------
-if "step" not in st.session_state:
-    st.session_state.step = 0
-if "answers" not in st.session_state:
-    st.session_state.answers = {}
-
-# -------------------------
-# FORM STEPS
-# -------------------------
-def step_0():
-    st.header("Step 1: Scan eligibility and image quality")
-    st.session_state.answers["scan_excluded"] = st.radio("Scan excluded", ["No", "Yes"])
-    st.session_state.answers["exclusion_reason"] = st.text_area("Reason for exclusion")
-    st.session_state.answers["fat_suppression"] = st.radio("Fat suppression applied", ["Yes", "No"])
-    st.session_state.answers["fat_suppression_quality"] = st.select_slider(
-        "Fat suppression quality",
-        options=[0,1,2,3],
-        format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
-    )
-
-def step_1():
-    st.header("Step 2: Tumour morphology")
-    st.session_state.answers["single_lesion"] = st.radio("Single contiguous lesion", ["Yes","No"])
-    st.session_state.answers["mass_enhancement"] = st.radio("Mass enhancement present", ["Yes","No"])
-    st.session_state.answers["non_mass_enhancement"] = st.radio("Non-mass enhancement present", ["Yes","No"])
-    st.session_state.answers["satellite_lesions"] = st.radio("Satellite lesions present", ["Yes","No"])
-    st.session_state.answers["num_satellites"] = st.number_input("Number of satellite lesions", min_value=0, step=1)
-    st.session_state.answers["nodular_unclear"] = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
-    st.session_state.answers["necrosis"] = st.radio("Intratumoural necrosis present", ["Yes","No"])
-
-def step_2():
-    st.header("Step 3: Segmentation quality assessment")
-    st.session_state.answers["satellite_included_omitted"] = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
-    st.session_state.answers["num_satellites_included"] = st.number_input("Number of satellite lesions included", min_value=0, step=1)
-    st.session_state.answers["required_additions"] = st.select_slider(
-        "Required additions (under-segmentation)", options=[0,1,2,3,4],
-        format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
-    )
-    st.session_state.answers["required_deletions"] = st.select_slider(
-        "Required deletions (over-segmentation)", options=[0,1,2,3,4],
-        format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
-    )
-    st.session_state.answers["complex_corrections"] = st.radio("Low-volume but complex corrections required", ["Yes","No"])
-    st.session_state.answers["overall_quality"] = st.select_slider(
-        "Overall segmentation quality", options=[1,2,3,4,5],
-        format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
-    )
-
-def step_3():
-    st.header("Step 4: Causes for false positives")
-    st.session_state.answers["fp_vessels"] = st.checkbox("Blood vessels")
-    st.session_state.answers["fp_nodes"] = st.checkbox("Lymph nodes")
-    st.session_state.answers["fp_nodular"] = st.checkbox("Nodular enhancement")
-    st.session_state.answers["fp_shape"] = st.checkbox("Complex lesion shape")
-    st.session_state.answers["fp_skin"] = st.checkbox("Skin")
-    st.session_state.answers["fp_nipple"] = st.checkbox("Nipple–areolar complex")
-    st.session_state.answers["fp_nme"] = st.checkbox("Non-mass enhancement")
-    st.session_state.answers["fp_satellites"] = st.checkbox("Satellite lesions")
-    st.session_state.answers["fp_additional"] = st.text_input("Other causes for false positives (optional)")
-
-def step_4():
-    st.header("Step 5: Causes for false negatives")
-    st.session_state.answers["fn_necrosis"] = st.radio("Necrosis / fibrosis", ["Yes","No"])
-    st.session_state.answers["fn_additional"] = st.text_input("Other causes for false negatives (optional)")
-
-steps = [step_0, step_1, step_2, step_3, step_4]
-
-# -------------------------
-# LAYOUT: MRI | FORM
-# -------------------------
-col1, col2 = st.columns([1,1], gap="medium")
-
-with col1:
+if mri is not None:
     st.subheader("MRI Viewer")
-    if mri is not None:
-        slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
-        alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
-        pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
-        target_h = 800
-        scale_factor = target_h / pil_img.size[1]
-        target_w = int(pil_img.size[0] * scale_factor)
-        pil_img_resized = pil_img.resize((target_w, target_h))
-        st.image(pil_img_resized, use_column_width=False)
+    slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
+    alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
+    pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
+    target_h = 800
+    scale_factor = target_h / pil_img.size[1]
+    target_w = int(pil_img.size[0] * scale_factor)
+    pil_img_resized = pil_img.resize((target_w, target_h))
+    st.image(pil_img_resized, use_column_width=False)
 
-with col2:
-    # Metadata inputs
-    rater_id = st.text_input("Rater ID", key="rater_id")
-    case_id = st.text_input("Case ID", key="case_id")
-    segmentation_options = ["Manual"]
-    selected_method = st.selectbox("Segmentation Method", segmentation_options + ["Other"])
-    if selected_method == "Other":
-        segmentation_method = st.text_input("Enter the name of your segmentation method")
-    else:
-        segmentation_method = selected_method
+# -------------------------
+# METADATA INPUTS
+# -------------------------
+st.subheader("Metadata")
+rater_id = st.text_input("Rater ID")
+case_id = st.text_input("Case ID")
+segmentation_options = ["Manual"]
+selected_method = st.selectbox("Segmentation Method", segmentation_options + ["Other"])
+if selected_method == "Other":
+    segmentation_method = st.text_input("Enter the name of your segmentation method")
+else:
+    segmentation_method = selected_method
 
-    # Render current step
-    steps[st.session_state.step]()
+# -------------------------
+# COLLAPSIBLE FORM
+# -------------------------
+with st.form("brisco_form"):
+    # Step 1: Scan eligibility
+    with st.expander("Step 1: Scan eligibility and image quality", expanded=True):
+        scan_excluded = st.radio("Scan excluded", ["No","Yes"])
+        exclusion_reason = st.text_area("Reason for exclusion")
+        fat_suppression = st.radio("Fat suppression applied", ["Yes","No"])
+        fat_suppression_quality = st.select_slider(
+            "Fat suppression quality",
+            options=[0,1,2,3],
+            format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
+        )
 
-    # Navigation buttons
-    col_prev, col_next = st.columns([1,1])
-    with col_prev:
-        if st.session_state.step > 0:
-            if st.button("Previous"):
-                st.session_state.step -= 1
-    with col_next:
-        if st.session_state.step < len(steps)-1:
-            if st.button("Next"):
-                st.session_state.step += 1
-        else:
-            if st.button("Submit"):
-                # ---------------------------
-                # SAVE TO SUPABASE
-                # ---------------------------
-                if rater_id.strip() == "" or case_id.strip() == "":
-                    st.warning("Please fill Case ID and Rater ID")
-                    st.stop()
-                try:
-                    # Merge answers + metadata
-                    data_to_save = st.session_state.answers.copy()
-                    data_to_save.update({
-                        "timestamp": datetime.now().isoformat(),
-                        "user_id": user_id,
-                        "rater_id": rater_id,
-                        "case_id": case_id,
-                        "segmentation_method": segmentation_method
-                    })
-                    supabase.table("scores").insert(data_to_save).execute()
-                    st.success("✅ Assessment saved successfully!")
-                except Exception as e:
-                    st.error(f"❌ Failed to save data: {e}")
+    # Step 2: Tumour morphology
+    with st.expander("Step 2: Tumour morphology", expanded=False):
+        single_lesion = st.radio("Single contiguous lesion", ["Yes","No"])
+        mass_enhancement = st.radio("Mass enhancement present", ["Yes","No"])
+        non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes","No"])
+        satellite_lesions = st.radio("Satellite lesions present", ["Yes","No"])
+        num_satellites = st.number_input("Number of satellite lesions", min_value=0, step=1)
+        nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
+        necrosis = st.radio("Intratumoural necrosis present", ["Yes","No"])
+
+    # Step 3: Segmentation quality
+    with st.expander("Step 3: Segmentation quality assessment", expanded=False):
+        satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
+        num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
+        required_additions = st.select_slider(
+            "Required additions (under-segmentation)", options=[0,1,2,3,4],
+            format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
+        )
+        required_deletions = st.select_slider(
+            "Required deletions (over-segmentation)", options=[0,1,2,3,4],
+            format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
+        )
+        complex_corrections = st.radio("Low-volume but complex corrections required", ["Yes","No"])
+        overall_quality = st.select_slider(
+            "Overall segmentation quality", options=[1,2,3,4,5],
+            format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
+        )
+
+    # Step 4: False positives
+    with st.expander("Step 4: Causes for false positives", expanded=False):
+        fp_vessels = st.checkbox("Blood vessels")
+        fp_nodes = st.checkbox("Lymph nodes")
+        fp_nodular = st.checkbox("Nodular enhancement")
+        fp_shape = st.checkbox("Complex lesion shape")
+        fp_skin = st.checkbox("Skin")
+        fp_nipple = st.checkbox("Nipple–areolar complex")
+        fp_nme = st.checkbox("Non-mass enhancement")
+        fp_satellites = st.checkbox("Satellite lesions")
+        fp_additional = st.text_input("Other causes for false positives (optional)")
+
+    # Step 5: False negatives
+    with st.expander("Step 5: Causes for false negatives", expanded=False):
+        fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes","No"])
+        fn_additional = st.text_input("Other causes for false negatives (optional)")
+
+    submitted = st.form_submit_button("Save Assessment")
+
+# -------------------------
+# SAVE TO SUPABASE
+# -------------------------
+if submitted:
+    if rater_id.strip() == "" or case_id.strip() == "":
+        st.warning("Please fill Case ID and Rater ID")
+        st.stop()
+    try:
+        data_to_save = {
+            "timestamp": datetime.now().isoformat(),
+            "user_id": user_id,
+            "rater_id": rater_id,
+            "case_id": case_id,
+            "segmentation_method": segmentation_method,
+            "scan_excluded": scan_excluded,
+            "exclusion_reason": exclusion_reason,
+            "fat_suppression": fat_suppression,
+            "fat_suppression_quality": fat_suppression_quality,
+            "single_lesion": single_lesion,
+            "mass_enhancement": mass_enhancement,
+            "non_mass_enhancement": non_mass_enhancement,
+            "satellite_lesions": satellite_lesions,
+            "num_satellites": num_satellites,
+            "nodular_unclear": nodular_unclear,
+            "necrosis": necrosis,
+            "satellite_included_omitted": satellite_included_omitted,
+            "num_satellites_included": num_satellites_included,
+            "required_additions": required_additions,
+            "required_deletions": required_deletions,
+            "complex_corrections": complex_corrections,
+            "overall_quality": overall_quality,
+            "fp_vessels": fp_vessels,
+            "fp_nodes": fp_nodes,
+            "fp_nodular": fp_nodular,
+            "fp_shape": fp_shape,
+            "fp_skin": fp_skin,
+            "fp_nipple": fp_nipple,
+            "fp_nme": fp_nme,
+            "fp_satellites": fp_satellites,
+            "fp_additional": fp_additional,
+            "fn_necrosis": fn_necrosis,
+            "fn_additional": fn_additional
+        }
+        supabase.table("scores").insert(data_to_save).execute()
+        st.success("✅ Assessment saved successfully!")
+    except Exception as e:
+        st.error(f"❌ Failed to save data: {e}")
 
 # -------------------------
 # LOAD PREVIOUS ASSESSMENTS
@@ -215,12 +217,7 @@ try:
     if not df.empty:
         st.dataframe(df)
         csv = df.to_csv(index=False)
-        st.download_button(
-            "Download My Data",
-            csv,
-            "my_scores.csv",
-            "text/csv"
-        )
+        st.download_button("Download My Data", csv, "my_scores.csv", "text/csv")
     else:
         st.info("No data yet")
 except Exception as e:
