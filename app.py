@@ -57,6 +57,15 @@ CREATE TABLE scores (
 )
 """)
 
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    profession TEXT,
+    country TEXT,
+    created_at TEXT
+)
+""")
+
 conn.commit()
 
 # Load users
