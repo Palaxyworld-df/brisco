@@ -25,7 +25,7 @@ except Exception as e:
 # ---------------------------
 # UI: WELCOME PAGE
 # ---------------------------
-st.title("Welcome to BRISCo App")
+st.title("Welcome to BRISCO ")
 
 st.markdown("""
 ### Breast MRI Segmentation Scoring Platform
@@ -36,7 +36,7 @@ This tool is designed for structured evaluation of breast MRI segmentations.
 
 ### Acknowledgment
 
-This work has been developed at **Dr. D. Y. Patil University (DPU)**.
+This work has been developed at ** Danube Private University (DPU)**.
 
 The BRISCo framework supports:
 - Evaluation of segmentation quality
