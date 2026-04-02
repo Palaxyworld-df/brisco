@@ -13,7 +13,8 @@ if "user_id" not in st.session_state:
     st.warning("Please login from the home page")
     st.stop()
 user_id = st.session_state.user_id
-st.title("BRISCO Form")
+
+st.title("BRISCO Form (Stepper Style)")
 
 # -------------------------
 # FILE UPLOADER
@@ -57,108 +58,112 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
-# CSS: two fixed height containers
+# Initialize stepper state
 # -------------------------
-st.markdown("""
-<style>
-/* Force the page to not scroll */
-html, body, [data-testid="stAppViewContainer"] {
-    overflow: hidden;
-    height: 100vh;
-}
+if "step" not in st.session_state:
+    st.session_state.step = 0
 
-/* MRI container scrollable internally */
-.mri-scroll {
-    height: 95vh;
-    overflow-y: auto;
-}
+# Store answers
+if "answers" not in st.session_state:
+    st.session_state.answers = {}
 
-/* Form container scrollable internally */
-.form-scroll {
-    height: 95vh;
-    overflow-y: auto;
-}
-</style>
-""", unsafe_allow_html=True)
+# Step titles and question functions
+def step_0():
+    st.header("Step 1: Scan eligibility and image quality")
+    st.session_state.answers["scan_excluded"] = st.radio("Scan excluded", ["No", "Yes"])
+    st.session_state.answers["exclusion_reason"] = st.text_area("Reason for exclusion")
+    st.session_state.answers["fat_suppression"] = st.radio("Fat suppression applied", ["Yes", "No"])
+    st.session_state.answers["fat_suppression_quality"] = st.select_slider(
+        "Fat suppression quality",
+        options=[0,1,2,3],
+        format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
+    )
+
+def step_1():
+    st.header("Step 2: Tumour morphology")
+    st.session_state.answers["single_lesion"] = st.radio("Single contiguous lesion", ["Yes","No"])
+    st.session_state.answers["mass_enhancement"] = st.radio("Mass enhancement present", ["Yes","No"])
+    st.session_state.answers["non_mass_enhancement"] = st.radio("Non-mass enhancement present", ["Yes","No"])
+    st.session_state.answers["satellite_lesions"] = st.radio("Satellite lesions present", ["Yes","No"])
+    st.session_state.answers["num_satellites"] = st.number_input("Number of satellite lesions", min_value=0, step=1)
+    st.session_state.answers["nodular_unclear"] = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
+    st.session_state.answers["necrosis"] = st.radio("Intratumoural necrosis present", ["Yes","No"])
+
+def step_2():
+    st.header("Step 3: Segmentation quality assessment")
+    st.session_state.answers["satellite_included_omitted"] = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
+    st.session_state.answers["num_satellites_included"] = st.number_input("Number of satellite lesions included", min_value=0, step=1)
+    st.session_state.answers["required_additions"] = st.select_slider(
+        "Required additions (under-segmentation)", options=[0,1,2,3,4],
+        format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
+    )
+    st.session_state.answers["required_deletions"] = st.select_slider(
+        "Required deletions (over-segmentation)", options=[0,1,2,3,4],
+        format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
+    )
+    st.session_state.answers["complex_corrections"] = st.radio("Low-volume but complex corrections required", ["Yes","No"])
+    st.session_state.answers["overall_quality"] = st.select_slider(
+        "Overall segmentation quality", options=[1,2,3,4,5],
+        format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
+    )
+
+def step_3():
+    st.header("Step 4: Causes for false positives")
+    st.session_state.answers["fp_vessels"] = st.checkbox("Blood vessels")
+    st.session_state.answers["fp_nodes"] = st.checkbox("Lymph nodes")
+    st.session_state.answers["fp_nodular"] = st.checkbox("Nodular enhancement")
+    st.session_state.answers["fp_shape"] = st.checkbox("Complex lesion shape")
+    st.session_state.answers["fp_skin"] = st.checkbox("Skin")
+    st.session_state.answers["fp_nipple"] = st.checkbox("Nipple–areolar complex")
+    st.session_state.answers["fp_nme"] = st.checkbox("Non-mass enhancement")
+    st.session_state.answers["fp_satellites"] = st.checkbox("Satellite lesions")
+    st.session_state.answers["fp_additional"] = st.text_input("Other causes for false positives (optional)")
+
+def step_4():
+    st.header("Step 5: Causes for false negatives")
+    st.session_state.answers["fn_necrosis"] = st.radio("Necrosis / fibrosis", ["Yes","No"])
+    st.session_state.answers["fn_additional"] = st.text_input("Other causes for false negatives (optional)")
+
+# List of steps
+steps = [step_0, step_1, step_2, step_3, step_4]
 
 # -------------------------
-# TWO SIDE-BY-SIDE CONTAINERS
+# Layout: two columns
 # -------------------------
-col1, col2 = st.columns([1, 1], gap="medium")
+col1, col2 = st.columns([1,1], gap="medium")
 
 with col1:
-    st.markdown('<div class="mri-scroll">', unsafe_allow_html=True)
+    st.subheader("MRI Viewer")
     if mri is not None:
-        st.subheader("MRI Viewer")
         slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
         alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
         pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
-        # Resize to fit column height
         target_h = 800
         scale_factor = target_h / pil_img.size[1]
         target_w = int(pil_img.size[0] * scale_factor)
         pil_img_resized = pil_img.resize((target_w, target_h))
         st.image(pil_img_resized, use_column_width=False)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="form-scroll">', unsafe_allow_html=True)
-    with st.form("qc_form"):
-        # ---- Section 1 ----
-        with st.expander("Scan eligibility and image quality", expanded=True):
-            scan_excluded = st.radio("Scan excluded", ["No", "Yes"])
-            exclusion_reason = st.text_area("Reason for exclusion")
-            fat_suppression = st.radio("Fat suppression applied", ["Yes", "No"])
-            fat_suppression_quality = st.select_slider(
-                "Fat suppression quality", options=[0,1,2,3],
-                format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
-            )
-        # ---- Section 2 ----
-        with st.expander("Tumour morphology", expanded=True):
-            single_lesion = st.radio("Single contiguous lesion", ["Yes","No"])
-            mass_enhancement = st.radio("Mass enhancement present", ["Yes","No"])
-            non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes","No"])
-            satellite_lesions = st.radio("Satellite lesions present", ["Yes","No"])
-            num_satellites = st.number_input("Number of satellite lesions", min_value=0, step=1)
-            nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
-            necrosis = st.radio("Intratumoural necrosis present", ["Yes","No"])
-        # ---- Section 3 ----
-        with st.expander("Segmentation quality assessment", expanded=True):
-            satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
-            num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
-            required_additions = st.select_slider(
-                "Required additions (under-segmentation)", options=[0,1,2,3,4],
-                format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
-            )
-            required_deletions = st.select_slider(
-                "Required deletions (over-segmentation)", options=[0,1,2,3,4],
-                format_func=lambda x: ["Acceptable","Minor correction","Intermediate correction","Major correction","Not acceptable"][x]
-            )
-            complex_corrections = st.radio("Low-volume but complex corrections required", ["Yes","No"])
-            overall_quality = st.select_slider(
-                "Overall segmentation quality", options=[1,2,3,4,5],
-                format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
-            )
-        # ---- Section 4 ----
-        with st.expander("Causes for false positives", expanded=True):
-            fp_vessels = st.checkbox("Blood vessels")
-            fp_nodes = st.checkbox("Lymph nodes")
-            fp_nodular = st.checkbox("Nodular enhancement")
-            fp_shape = st.checkbox("Complex lesion shape")
-            fp_skin = st.checkbox("Skin")
-            fp_nipple = st.checkbox("Nipple–areolar complex")
-            fp_nme = st.checkbox("Non-mass enhancement")
-            fp_satellites = st.checkbox("Satellite lesions")
-            fp_additional = st.text_input("Other causes for false positives (optional)")
-        # ---- Section 5 ----
-        with st.expander("Causes for false negatives", expanded=True):
-            fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes","No"])
-            fn_additional = st.text_input("Other causes for false negatives (optional)")
-        submitted = st.form_submit_button("Save Assessment")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Render current step
+    steps[st.session_state.step]()
+    # Navigation buttons
+    col_prev, col_next = st.columns([1,1])
+    with col_prev:
+        if st.session_state.step > 0:
+            if st.button("Previous"):
+                st.session_state.step -= 1
+    with col_next:
+        if st.session_state.step < len(steps)-1:
+            if st.button("Next"):
+                st.session_state.step += 1
+        else:
+            if st.button("Submit"):
+                st.success("Assessment saved!")
+                st.write(st.session_state.answers)
 
 # -------------------------
-# SIDEBAR
+# Sidebar
 # -------------------------
 st.sidebar.header("Session Info")
 st.sidebar.write(f"**User ID:** {user_id}")
