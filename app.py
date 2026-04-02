@@ -6,17 +6,10 @@ from supabase import create_client
 
 st.set_page_config(page_title="BRISCo", layout="centered")
 
-# ---------------------------
-# SUPABASE CONNECTION
-# ---------------------------
-try:
-    supabase = create_client(
-        st.secrets["SUPABASE_URL"],
-        st.secrets["SUPABASE_KEY"]
-    )
-except Exception as e:
-    st.error("❌ Failed to connect to database")
-    st.stop()
+# -------supabase---------- 
+url = st.secrets["SUPABASE_URL"] 
+key = st.secrets["SUPABASE_KEY"] 
+supabase = create_client(url, key)
 
 # ---------------------------
 # LOAD USERS (SAFE)
