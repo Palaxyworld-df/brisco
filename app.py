@@ -47,31 +47,36 @@ st.markdown("""
 # ---------------------------
 if "page" not in st.session_state:
     st.session_state.page = "home"
-    
-col_left, col_center, col_right = st.columns([1, 2, 1])
-
-with col_center:
-    btn_col1, btn_col2 = st.columns(2)
-
-    with btn_col1:
-        if st.button("Existing User"):
-            st.session_state.page = "login"
-
-    with btn_col2:
-        if st.button("New User"):
-            st.session_state.page = "register"
-
 
 # ---------------------------
-# LOGIN
+# HOME PAGE
 # ---------------------------
-if "page" not in st.session_state:
-    st.session_state.page = "home"
-    
-col_left, col_center, col_right = st.columns([1, 2, 1])
-    with col2:
+if st.session_state.page == "home":
+
+    col_left, col_center, col_right = st.columns([1, 2, 1])
+
+    with col_center:
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            if st.button("Existing User"):
+                st.session_state.page = "login"
+
+        with btn_col2:
+            if st.button("New User"):
+                st.session_state.page = "register"
+
+# ---------------------------
+# LOGIN PAGE
+# ---------------------------
+elif st.session_state.page == "login":
+
+    col_left, col_center, col_right = st.columns([1, 2, 1])
+
+    with col_center:
         st.subheader("Login")
         user_id_input = st.text_input("Enter User ID")
+
         if st.button("Login"):
             if users_df.empty:
                 st.error("No users registered yet")
@@ -82,39 +87,41 @@ col_left, col_center, col_right = st.columns([1, 2, 1])
                 st.error("User not found")
 
 # ---------------------------
-# REGISTER
+# REGISTER PAGE
 # ---------------------------
-if st.session_state.page == "register":
-    st.subheader("Register")
+elif st.session_state.page == "register":
 
-    profession = st.text_input("Profession")
-    country = st.text_input("Country")
+    col_left, col_center, col_right = st.columns([1, 2, 1])
 
-    if st.button("Create User"):
+    with col_center:
+        st.subheader("Register")
 
-        # ✅ Validation
-        if profession.strip() == "" or country.strip() == "":
-            st.warning("Please fill all fields")
-            st.stop()
+        profession = st.text_input("Profession")
+        country = st.text_input("Country")
 
-        user_id = str(uuid.uuid4())[:8]
+        if st.button("Create User"):
+            if profession.strip() == "" or country.strip() == "":
+                st.warning("Please fill all fields")
+                st.stop()
 
-        try:
-            supabase.table("users").insert({
-                "user_id": user_id,
-                "profession": profession,
-                "country": country,
-                "created_at": datetime.now().isoformat()
-            }).execute()
+            user_id = str(uuid.uuid4())[:8]
 
-            st.success(f"✅ Your User ID: {user_id}")
-            st.warning("⚠️ Save this ID for future login")
+            try:
+                supabase.table("users").insert({
+                    "user_id": user_id,
+                    "profession": profession,
+                    "country": country,
+                    "created_at": datetime.now().isoformat()
+                }).execute()
 
-            st.session_state.user_id = user_id
-            st.switch_page("pages/1_Scoring.py")
+                st.success(f"✅ Your User ID: {user_id}")
+                st.warning("⚠️ Save this ID for future login")
 
-        except Exception as e:
-            st.error("❌ Failed to create user")
+                st.session_state.user_id = user_id
+                st.switch_page("pages/1_Scoring.py")
+
+            except Exception as e:
+                st.error("❌ Failed to create user")
 
 st.markdown("""
 
