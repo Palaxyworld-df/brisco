@@ -48,7 +48,7 @@ st.markdown("""
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
-col_left, col_center, col_right = st.columns([1, 2, 2])
+col_left, col_center, col_right = st.columns([1, 2, 0])
 
 with col_center:
     btn_col1, btn_col2 = st.columns(2)
@@ -65,7 +65,7 @@ with col_center:
 # LOGIN
 # ---------------------------
 
-col1, col2, col3 = st.columns([1, 2, 2])
+col1, col2, col3 = st.columns([1, 2, 0])
 
 with col2:
     st.subheader("Login")
