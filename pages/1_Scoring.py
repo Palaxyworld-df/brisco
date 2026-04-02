@@ -27,8 +27,6 @@ if "user_id" not in st.session_state:
     st.stop()
 user_id = st.session_state.user_id
 
-st.title("BRISCO Form")
-
 # -------------------------
 # FILE UPLOADER
 # -------------------------
