@@ -14,7 +14,7 @@ if "user_id" not in st.session_state:
     st.stop()
 user_id = st.session_state.user_id
 
-st.title("BRISCO Form (Stepper Style)")
+st.title("BRISCO Form")
 
 # -------------------------
 # FILE UPLOADER
@@ -69,8 +69,8 @@ if "answers" not in st.session_state:
 
 # Step titles and question functions
 def step_0():
-    st.header("Step 1: Scan eligibility and image quality")
-    st.session_state.answers["scan_excluded"] = st.radio("Scan excluded", ["No", "Yes"])
+    st.header("Scan eligibility and image quality")
+    st.session_state.answers["scan_excluded"] = st.radio("Scan excluded", ["Yes", "No"])
     st.session_state.answers["exclusion_reason"] = st.text_area("Reason for exclusion")
     st.session_state.answers["fat_suppression"] = st.radio("Fat suppression applied", ["Yes", "No"])
     st.session_state.answers["fat_suppression_quality"] = st.select_slider(
@@ -80,7 +80,7 @@ def step_0():
     )
 
 def step_1():
-    st.header("Step 2: Tumour morphology")
+    st.header("Tumour morphology")
     st.session_state.answers["single_lesion"] = st.radio("Single contiguous lesion", ["Yes","No"])
     st.session_state.answers["mass_enhancement"] = st.radio("Mass enhancement present", ["Yes","No"])
     st.session_state.answers["non_mass_enhancement"] = st.radio("Non-mass enhancement present", ["Yes","No"])
@@ -90,7 +90,7 @@ def step_1():
     st.session_state.answers["necrosis"] = st.radio("Intratumoural necrosis present", ["Yes","No"])
 
 def step_2():
-    st.header("Step 3: Segmentation quality assessment")
+    st.header("Segmentation quality assessment")
     st.session_state.answers["satellite_included_omitted"] = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
     st.session_state.answers["num_satellites_included"] = st.number_input("Number of satellite lesions included", min_value=0, step=1)
     st.session_state.answers["required_additions"] = st.select_slider(
@@ -108,7 +108,7 @@ def step_2():
     )
 
 def step_3():
-    st.header("Step 4: Causes for false positives")
+    st.header("Causes for false positives")
     st.session_state.answers["fp_vessels"] = st.checkbox("Blood vessels")
     st.session_state.answers["fp_nodes"] = st.checkbox("Lymph nodes")
     st.session_state.answers["fp_nodular"] = st.checkbox("Nodular enhancement")
@@ -120,7 +120,7 @@ def step_3():
     st.session_state.answers["fp_additional"] = st.text_input("Other causes for false positives (optional)")
 
 def step_4():
-    st.header("Step 5: Causes for false negatives")
+    st.header("Causes for false negatives")
     st.session_state.answers["fn_necrosis"] = st.radio("Necrosis / fibrosis", ["Yes","No"])
     st.session_state.answers["fn_additional"] = st.text_input("Other causes for false negatives (optional)")
 
@@ -160,7 +160,7 @@ with col2:
         else:
             if st.button("Submit"):
                 st.success("Assessment saved!")
-                st.write(st.session_state.answers)
+                
 
 # -------------------------
 # Sidebar
