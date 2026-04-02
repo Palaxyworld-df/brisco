@@ -48,24 +48,24 @@ st.markdown("""
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns([1, 2, 1])
 
-with col1:
+with col2:
     if st.button("To Enter as an Existing User"):
         st.session_state.page = "login"
 
-with col2:
     if st.button("To apply as a New User"):
         st.session_state.page = "register"
 
 # ---------------------------
 # LOGIN
 # ---------------------------
-if st.session_state.page == "login":
+
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
     st.subheader("Login")
-
     user_id_input = st.text_input("Enter User ID")
-
     if st.button("Login"):
         if users_df.empty:
             st.error("No users registered yet")
