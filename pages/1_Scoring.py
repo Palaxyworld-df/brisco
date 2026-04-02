@@ -46,7 +46,7 @@ if mri is not None:
     slice_idx = st.slider("Slice index", 0, mri.shape[2] - 1, mri.shape[2] // 2)
     alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
 
-    fig, ax = plt.subplots(figsize=(6, 6))  # fixed square aspect ratio
+    fig, ax = plt.subplots(figsize=(2, 2))  # fixed square aspect ratio
     ax.imshow(mri[:, :, slice_idx], cmap="gray")
     if mask is not None:
         ax.imshow(mask[:, :, slice_idx], cmap="jet", alpha=alpha)
