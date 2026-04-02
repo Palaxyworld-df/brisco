@@ -56,15 +56,15 @@ case_id = st.sidebar.text_input("Case ID")
 
 segmentation_options = ["Manual", "Model A"]
 
-# Dropdown for predefined methods
-selected_method = st.selectbox(
+# Dropdown for predefined methods (in sidebar)
+selected_method = st.sidebar.selectbox(
     "Segmentation Method",
     options=segmentation_options + ["Other"]  # Add "Other" option
 )
 
-# If user selects "Other", show text input
+# If user selects "Other", show text input (also in sidebar)
 if selected_method == "Other":
-    custom_method = st.text_input("Enter your segmentation method")
+    custom_method = st.sidebar.text_input("Enter your segmentation method")
     if custom_method:
         segmentation_method = custom_method
     else:
@@ -72,7 +72,7 @@ if selected_method == "Other":
 else:
     segmentation_method = selected_method
 
-st.write(f"Selected segmentation method: {segmentation_method}")
+st.sidebar.write(f"Selected segmentation method: {segmentation_method}")
 
 # ---------------------------
 # FILE UPLOAD
