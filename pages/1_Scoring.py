@@ -59,24 +59,42 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
-# FIXED HEIGHT CSS (disable scroll)
+# CSS FIX FOR NO SCROLL
 # -------------------------
 st.markdown(
     """
     <style>
     html, body, [data-testid="stAppViewContainer"] {
-        overflow: hidden;
-        height: 100vh;
+        overflow: hidden !important;
+        height: 100vh !important;
     }
-    /* container for 2 columns */
-    .fixed-height {
-        height: 90vh;
+
+    /* Full height flex layout for columns */
+    .no-scroll-container {
         display: flex;
+        flex-direction: row;
+        height: 100vh;
         gap: 2rem;
+        padding-right: 1rem;
     }
-    .fixed-height > div {
+
+    /* Each column fills the height and hides overflow */
+    .no-scroll-column {
+        flex: 1;
         height: 100%;
-        overflow: hidden;  /* disable internal scroll */
+        overflow: hidden;
+    }
+
+    /* Force form fields to fit without scrolling */
+    .stForm {
+        height: 100%;
+        overflow-y: hidden;
+    }
+
+    /* Optional: scroll inside form sections if needed */
+    .stExpanderContent {
+        max-height: 90vh;
+        overflow-y: auto;
     }
     </style>
     """,
@@ -84,14 +102,13 @@ st.markdown(
 )
 
 # -------------------------
-# MAIN LAYOUT WITH COLUMNS
+# MAIN LAYOUT WITH FIXED HEIGHT
 # -------------------------
-col1, col2 = st.columns([1, 1], gap="large")  # equal widths for equal height
-
-st.markdown('<div class="fixed-height">', unsafe_allow_html=True)
+st.markdown('<div class="no-scroll-container">', unsafe_allow_html=True)
 
 # --- Left column: MRI viewer ---
-with col1:
+with st.container():
+    st.markdown('<div class="no-scroll-column">', unsafe_allow_html=True)
     if mri is not None:
         st.subheader("MRI Viewer")
         slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2, key="slice_slider")
@@ -104,13 +121,13 @@ with col1:
         target_w = int(pil_img.size[0] * scale_factor)
         pil_img_resized = pil_img.resize((target_w, target_h))
         st.image(pil_img_resized, use_column_width=False, output_format="PNG")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Right column: FORM ---
-with col2:
+with st.container():
+    st.markdown('<div class="no-scroll-column">', unsafe_allow_html=True)
     with st.form("qc_form"):
-        # -----------------------
         # Section 1
-        # -----------------------
         with st.expander("Scan eligibility and image quality", expanded=True):
             scan_excluded = st.radio("Scan excluded", ["No", "Yes"])
             exclusion_reason = st.text_area("Reason for exclusion")
@@ -121,9 +138,7 @@ with col2:
                 format_func=lambda x: ["None", "Minor Failure", "Moderate Failure", "Major Failure"][x]
             )
 
-        # -----------------------
         # Section 2
-        # -----------------------
         with st.expander("Tumour morphology", expanded=True):
             single_lesion = st.radio("Single contiguous lesion", ["Yes", "No"])
             mass_enhancement = st.radio("Mass enhancement present", ["Yes", "No"])
@@ -133,9 +148,7 @@ with col2:
             nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes", "No"])
             necrosis = st.radio("Intratumoural necrosis present", ["Yes", "No"])
 
-        # -----------------------
         # Section 3
-        # -----------------------
         with st.expander("Segmentation quality assessment", expanded=True):
             satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included", "Omitted"])
             num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
@@ -168,9 +181,7 @@ with col2:
                 format_func=lambda x: ["Acceptable", "Minor issues", "Moderate issues", "Major issues", "Not acceptable"][x-1]
             )
 
-        # -----------------------
         # Section 4
-        # -----------------------
         with st.expander("Causes for false positives", expanded=True):
             fp_vessels = st.checkbox("Blood vessels")
             fp_nodes = st.checkbox("Lymph nodes")
@@ -182,14 +193,13 @@ with col2:
             fp_satellites = st.checkbox("Satellite lesions")
             fp_additional = st.text_input("Other causes for false positives (optional)")
 
-        # -----------------------
         # Section 5
-        # -----------------------
         with st.expander("Causes for false negatives", expanded=True):
             fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes", "No"])
             fn_additional = st.text_input("Other causes for false negatives (optional)")
 
         submitted = st.form_submit_button("Save Assessment")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
