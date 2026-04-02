@@ -8,7 +8,6 @@ import numpy as np
 from PIL import Image
 import numpy as np
 import streamlit as st
-from skimage.transform import resize
 
 st.set_page_config(page_title="BRISCO", layout="wide")
 
