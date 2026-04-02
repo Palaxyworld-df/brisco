@@ -11,7 +11,7 @@ from supabase import create_client
 # CONFIG
 # -------------------------
 st.set_page_config(page_title="BRISCO", layout="wide")
-
+st.title("BRISCO Form")
 # -------------------------
 # SUPABASE SETUP
 # -------------------------
@@ -117,7 +117,6 @@ if mri is not None:
 # -------------------------
 # COLLAPSIBLE FORM
 # -------------------------
-st.subheader("Scoring Form")
 with st.form("brisco_form"):
     with st.expander("Scan eligibility and image quality", expanded=True):
         scan_excluded = st.radio("Scan excluded", ["No","Yes"])
