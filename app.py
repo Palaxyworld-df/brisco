@@ -65,7 +65,10 @@ with col_center:
 # ---------------------------
 # LOGIN
 # ---------------------------
-
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+    
+col_left, col_center, col_right = st.columns([1, 2, 1])
 with col2:
     st.subheader("Login")
     user_id_input = st.text_input("Enter User ID")
