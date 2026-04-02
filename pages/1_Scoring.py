@@ -71,31 +71,30 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
-# SIDEBAR: Metadata + Session Data
+# SESSION ID
 # -------------------------
-st.sidebar.header("Metadata and Data Management")
-
-# Generate session id
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 session_id = st.session_state.session_id
 
-# Metadata inputs
+# -------------------------
+# SIDEBAR: Metadata & Previous Data
+# -------------------------
+st.sidebar.header("Metadata and Data Management")
+
 rater_id = st.sidebar.text_input("Rater ID", key="rater_id")
 case_id = st.sidebar.text_input("Case ID", key="case_id")
 segmentation_options = ["Manual"]
 selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
 if selected_method == "Other":
-    segmentation_method = st.sidebar.text_input("Enter your segmentation method")
+    segmentation_method = st.sidebar.text_input("Enter the name of your segmentation method", key="seg_method_other")
 else:
     segmentation_method = selected_method
 
-# Load user data
+# Load all previous submissions for user (sidebar)
 try:
     response_all = supabase.table("scores").select("*").eq("user_id", user_id).execute()
     df_all = pd.DataFrame(response_all.data if response_all.data else [])
-
-    # Download all previous data
     if not df_all.empty:
         csv_all = df_all.to_csv(index=False)
         st.sidebar.download_button(
@@ -104,28 +103,11 @@ try:
             "my_scores_all.csv",
             "text/csv"
         )
-
-    # Download current session data
-    df_session = df_all[df_all["session_id"] == session_id] if not df_all.empty else pd.DataFrame()
-    if not df_session.empty:
-        csv_session = df_session.to_csv(index=False)
-        st.sidebar.download_button(
-            "Download My Current Session Data",
-            csv_session,
-            "my_scores_session.csv",
-            "text/csv"
-        )
-        if st.sidebar.button("Delete My Current Session Data"):
-            supabase.table("scores").delete()\
-                .eq("user_id", user_id)\
-                .eq("session_id", session_id)\
-                .execute()
-            st.sidebar.success("✅ Current session data deleted")
 except Exception as e:
-    st.sidebar.error(f"Failed to load data: {e}")
+    st.sidebar.error(f"Failed to load previous data: {e}")
 
 # -------------------------
-# MRI VIEWER
+# DISPLAY MRI
 # -------------------------
 if mri is not None:
     st.subheader("MRI Viewer")
@@ -152,7 +134,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
         )
 
-    with st.expander("Tumour morphology"):
+    with st.expander("Tumour morphology", expanded=False):
         single_lesion = st.radio("Single contiguous lesion", ["Yes","No"])
         mass_enhancement = st.radio("Mass enhancement present", ["Yes","No"])
         non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes","No"])
@@ -161,7 +143,7 @@ with st.form("brisco_form"):
         nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
         necrosis = st.radio("Intratumoural necrosis present", ["Yes","No"])
 
-    with st.expander("Segmentation quality assessment"):
+    with st.expander("Segmentation quality assessment", expanded=False):
         satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
         num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
         required_additions = st.select_slider(
@@ -178,7 +160,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
         )
 
-    with st.expander("Causes for false positives"):
+    with st.expander("Causes for false positives", expanded=False):
         fp_vessels = st.checkbox("Blood vessels")
         fp_nodes = st.checkbox("Lymph nodes")
         fp_nodular = st.checkbox("Nodular enhancement")
@@ -189,7 +171,7 @@ with st.form("brisco_form"):
         fp_satellites = st.checkbox("Satellite lesions")
         fp_additional = st.text_input("Other causes for false positives (optional)")
 
-    with st.expander("Causes for false negatives"):
+    with st.expander("Causes for false negatives", expanded=False):
         fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes","No"])
         fn_additional = st.text_input("Other causes for false negatives (optional)")
 
@@ -243,3 +225,27 @@ if submitted:
         st.success("✅ Assessment saved successfully!")
     except Exception as e:
         st.error(f"❌ Failed to save data: {e}")
+
+# -------------------------
+# CURRENT SESSION DATA DOWNLOAD / DELETE (MAIN PAGE)
+# -------------------------
+try:
+    df_session = df_all[df_all["session_id"] == session_id] if not df_all.empty else pd.DataFrame()
+    if not df_session.empty:
+        st.markdown("---")
+        st.subheader("Current Session Data")
+        csv_session = df_session.to_csv(index=False)
+        st.download_button(
+            "Download My Current Session Data",
+            csv_session,
+            "my_scores_session.csv",
+            "text/csv"
+        )
+        if st.button("Delete My Current Session Data"):
+            supabase.table("scores").delete()\
+                .eq("user_id", user_id)\
+                .eq("session_id", session_id)\
+                .execute()
+            st.success("✅ Current session data deleted")
+except Exception as e:
+    st.error(f"Failed to load current session data: {e}")
