@@ -53,6 +53,7 @@ if st.session_state.page == "home":
         with btn_col1:
             if st.button("Existing User"):
                 st.session_state.page = "login"
+                st.experimental_rerun()
         with btn_col2:
             if st.button("New User"):
                 st.session_state.page = "register"
