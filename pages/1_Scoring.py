@@ -1,7 +1,6 @@
 import streamlit as st
 import nibabel as nib
 import tempfile
-from supabase import create_client
 import numpy as np
 from PIL import Image
 
@@ -60,36 +59,49 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     return Image.fromarray(slice_rgb)
 
 # -------------------------
+# FIXED HEIGHT CSS (disable scroll)
+# -------------------------
+st.markdown(
+    """
+    <style>
+    html, body, [data-testid="stAppViewContainer"] {
+        overflow: hidden;
+        height: 100vh;
+    }
+    /* container for 2 columns */
+    .fixed-height {
+        height: 90vh;
+        display: flex;
+        gap: 2rem;
+    }
+    .fixed-height > div {
+        height: 100%;
+        overflow: hidden;  /* disable internal scroll */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# -------------------------
 # MAIN LAYOUT WITH COLUMNS
 # -------------------------
-col1, col2 = st.columns([1, 2])  # left 1/3, right 2/3
+col1, col2 = st.columns([1, 1], gap="large")  # equal widths for equal height
 
-# --- Left column: MRI viewer (full height) ---
+st.markdown('<div class="fixed-height">', unsafe_allow_html=True)
+
+# --- Left column: MRI viewer ---
 with col1:
     if mri is not None:
         st.subheader("MRI Viewer")
-        slice_idx = st.slider(
-            "Slice index",
-            0,
-            mri.shape[2]-1,
-            mri.shape[2]//2,
-            key="slice_slider"
-        )
-        alpha = st.slider(
-            "Mask opacity",
-            0.0,
-            1.0,
-            0.4,
-            key="alpha_slider"
-        )
+        slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2, key="slice_slider")
+        alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4, key="alpha_slider")
         pil_img = get_slice_rgb(mri, mask, slice_idx, alpha)
 
-        # 🔥 Resize image to fill viewport height (~90vh)
-        from PIL import ImageOps
-        img_w, img_h = pil_img.size
-        target_h = 900  # adjust depending on typical viewport height
-        scale_factor = target_h / img_h
-        target_w = int(img_w * scale_factor)
+        # Resize to column height
+        target_h = 850
+        scale_factor = target_h / pil_img.size[1]
+        target_w = int(pil_img.size[0] * scale_factor)
         pil_img_resized = pil_img.resize((target_w, target_h))
         st.image(pil_img_resized, use_column_width=False, output_format="PNG")
 
@@ -178,6 +190,8 @@ with col2:
             fn_additional = st.text_input("Other causes for false negatives (optional)")
 
         submitted = st.form_submit_button("Save Assessment")
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
 # SIDEBAR
