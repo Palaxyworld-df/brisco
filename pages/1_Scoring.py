@@ -7,7 +7,6 @@ from supabase import create_client
 import numpy as np
 from PIL import Image
 import numpy as np
-import streamlit as st
 
 st.set_page_config(page_title="BRISCO", layout="wide")
 
@@ -45,9 +44,6 @@ mask = load_nifti(mask_file) if mask_file else None
 # -------------------------
 # MRI Viewer with fixed aspect ratio
 # -------------------------
-import streamlit as st
-import numpy as np
-
 def overlay_slice_to_rgb(image, mask=None, slice_idx=0, alpha=0.4):
     """Return an RGB image of the MRI slice with optional mask overlay"""
     slice_gray = image[:, :, slice_idx]
@@ -72,7 +68,7 @@ slice_idx = 30
 mri_rgb = overlay_slice_to_rgb(mri, mask, slice_idx, alpha=0.4)
 
 # Display in Streamlit with fixed width
-st.image(mri_rgb, width=400)  # width in pixels; adjust as needed
+st.image(mri_rgb, width=200)  # width in pixels; adjust as needed
 
 # -------------------------
 # Sidebar session info
