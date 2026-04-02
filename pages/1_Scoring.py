@@ -131,10 +131,10 @@ st.sidebar.write(f"**User ID:** {user_id}")
 rater_id = st.sidebar.text_input("Rater ID")
 case_id = st.sidebar.text_input("Case ID")
 
-segmentation_options = ["Manual", "Model A", "Model B"]
+segmentation_options = ["Manual"]
 selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
 if selected_method == "Other":
-    segmentation_method = st.sidebar.text_input("Enter your segmentation method")
+    segmentation_method = st.sidebar.text_input("Enter the name of your segmentation method")
 else:
     segmentation_method = selected_method
 
