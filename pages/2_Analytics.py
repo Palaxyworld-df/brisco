@@ -4,6 +4,7 @@ from supabase import create_client
 
 st.title("Analytics Dashboard")
 
+# Connect to Supabase
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
@@ -22,20 +23,19 @@ users = pd.DataFrame(
 # METRICS
 # ---------------------------
 st.subheader("Overview")
-
 st.write(f"Total users: {len(users)}")
 st.write(f"Total assessments: {len(scores)}")
 
 # ---------------------------
-# COUNTRY DISTRIBUTION
+# USERS BY PROFESSION
 # ---------------------------
-if not users.empty:
-    st.subheader("Users by Country")
-    st.bar_chart(users["country"].value_counts())
+if not users.empty and "profession" in users.columns:
+    st.subheader("Users by Profession")
+    st.bar_chart(users["profession"].value_counts())
 
 # ---------------------------
-# QUALITY DISTRIBUTION
+# USERS BY COUNTRY
 # ---------------------------
-if not scores.empty:
-    st.subheader("Segmentation Quality")
-    st.bar_chart(scores["overall_quality"].value_counts())
+if not users.empty and "country" in users.columns:
+    st.subheader("Users by Country")
+    st.bar_chart(users["country"].value_counts())
