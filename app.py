@@ -41,27 +41,20 @@ It is a plug-and-play web application designed for radiologists to evaluate the 
 
 **How to use?** Only NIFTII files upto 200 MB are elligible for input. The web. app. is hosted through streamlit free version hence it may occasionally sleep and function slow. 
 All information related to a user can be deleted by the user themselves by clicking the button. 
+
 **Data privacy:** Only the entries 'Profession', 'Country' are stored at the backend in Supabase to show the dashboard analytics and depict the use of the web. app. over time. 
 NIFTI data input is not collected at the backend. The form entries are being stored in Supabase so that users can login again and also have access to their previous login entries. 
+
 Tech stacks used: Supabase ( ), 
+
 **Contacts:** This work has been developed by the researchers working at the Research Centre for Medical Image Analysis and AI, Department of Medicine, Danube Private University (DPU), Krems-3500, Austria. 
 For queries or bugs related to the interface, email: Palak.Handa@dp-uni.ac.at. For queries related to the scoring form, email: Ramona.Woitek@dp-uni.ac.at
+
 **Licence:** CC BY-NC. Commercial use is prohibited. Research collaborations and suggestions are welcome for further improvements. Credit must be given to the creaters. Hence, users must cite the following when using the code, data, web app, or any information generated through the web. app. 
 {bibtex of the github}
 {bibtex of the manuscript preprint}
 
 """)
-
-# ---------------------------
-# STATS
-# ---------------------------
-st.subheader("Platform Stats")
-
-st.write(f"Total users: {len(users_df)}")
-
-if not users_df.empty and "country" in users_df.columns:
-    st.write("Users by country:")
-    st.write(users_df["country"].value_counts())
 
 # ---------------------------
 # NAVIGATION STATE
