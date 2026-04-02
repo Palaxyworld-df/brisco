@@ -10,6 +10,20 @@ import numpy as np
 
 st.set_page_config(page_title="BRISCO", layout="wide")
 
+st.markdown("""
+    <style>
+    .sticky-viewer {
+        position: sticky;
+        top: 80px;
+        z-index: 999;
+        background-color: white;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- Supabase connection ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
@@ -41,16 +55,10 @@ def load_nifti(uploaded_file):
 mri = load_nifti(mri_file) if mri_file else None
 mask = load_nifti(mask_file) if mask_file else None
 
-# -------------------------
-# MRI Viewer with fixed aspect ratio
-# -------------------------
-def overlay_slice_to_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_factor=3):
-    """Robust + small MRI viewer"""
-
+def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_factor=2):
     slice_gray = image[:, :, slice_idx]
     slice_gray = np.nan_to_num(slice_gray, nan=0.0)
 
-    # Safe normalization
     min_val = slice_gray.min()
     max_val = slice_gray.max()
     if max_val - min_val == 0:
@@ -58,7 +66,7 @@ def overlay_slice_to_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_fa
 
     slice_gray = ((slice_gray - min_val) / (max_val - min_val) * 255).astype(np.uint8)
 
-    # 🔥 IMPORTANT: reduce size BEFORE display
+    # Downsample → controls size
     slice_gray = slice_gray[::downsample_factor, ::downsample_factor]
 
     slice_rgb = np.stack([slice_gray]*3, axis=-1)
@@ -74,50 +82,12 @@ def overlay_slice_to_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_fa
 
             slice_rgb = ((1-alpha)*slice_rgb + alpha*mask_rgb).astype(np.uint8)
         except:
-            pass  # prevents crash if mask shape mismatch
+            pass
 
     return Image.fromarray(slice_rgb)
 
-# -------------------------
-# Resize + Viewer (NO matplotlib, NO st.image)
-# -------------------------
-
-def downsample_image(img, factor=2):
-    """Downsample image using simple slicing (fast + no deps)"""
-    return img[::factor, ::factor]
-
-def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4, downsample_factor=3):
-    """Convert slice to small RGB image"""
-    
-    slice_gray = image[:, :, slice_idx]
-    slice_gray = np.nan_to_num(slice_gray, nan=0.0)
-
-    # Normalize
-    min_val = slice_gray.min()
-    max_val = slice_gray.max()
-    if max_val - min_val == 0:
-        max_val = min_val + 1e-8
-
-    slice_gray = ((slice_gray - min_val) / (max_val - min_val) * 255).astype(np.uint8)
-
-    # Downsample BEFORE display
-    slice_gray = downsample_image(slice_gray, downsample_factor)
-
-    # Convert to RGB
-    slice_rgb = np.stack([slice_gray]*3, axis=-1)
-
-    # Overlay mask
-    if mask is not None:
-        mask_slice = mask[:, :, slice_idx]
-        mask_slice = downsample_image(mask_slice, downsample_factor)
-        mask_slice = np.nan_to_num(mask_slice, nan=0.0)
-
-        mask_rgb = np.zeros_like(slice_rgb)
-        mask_rgb[..., 0] = (mask_slice * 255).astype(np.uint8)
-
-        slice_rgb = ((1-alpha)*slice_rgb + alpha*mask_rgb).astype(np.uint8)
-
-    return Image.fromarray(slice_rgb)
+pil_img = get_slice_rgb(mri, mask, slice_idx, alpha, downsample_factor=2)
+st.write(pil_img)
 
 
 # -------------------------
@@ -129,10 +99,11 @@ if mri is not None:
     slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
     alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
 
-    # 🔥 KEY: increase factor to make viewer smaller
-    pil_img = get_slice_rgb(mri, mask, slice_idx, alpha, downsample_factor=3)
+    pil_img = get_slice_rgb(mri, mask, slice_idx, alpha, downsample_factor=2)  # 👈 less aggressive
 
+    st.markdown('<div class="sticky-viewer">', unsafe_allow_html=True)
     st.write(pil_img)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
 # Sidebar session info
