@@ -46,36 +46,34 @@ mask = load_nifti(mask_file) if mask_file else None
 # -------------------------
 # MRI Viewer with fixed aspect ratio
 # -------------------------
-if mri is not None:
-    st.subheader("MRI Viewer")
-    slice_idx = st.slider("Slice index", 0, mri.shape[2]-1, mri.shape[2]//2)
-    alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
+import matplotlib.pyplot as plt
+import numpy as np
+import streamlit as st
 
-    # Extract MRI slice
-    slice_img = mri[:, :, slice_idx]
-    slice_norm = (slice_img - slice_img.min()) / (slice_img.max() - slice_img.min())
-    slice_rgb = np.stack([slice_norm]*3, axis=-1)  # grayscale -> RGB
+def overlay_slice(image, mask, slice_idx=0, alpha=0.4):
+    # Create figure with small size (width, height in inches)
+    fig, ax = plt.subplots(figsize=(1, 1)) 
+    ax.imshow(image[:, :, slice_idx], cmap="gray")
 
     if mask is not None:
         mask_slice = mask[:, :, slice_idx]
-        # Resize mask to match MRI slice if shapes mismatch
-        if mask_slice.shape != slice_img.shape:
-            mask_slice = resize(mask_slice, slice_img.shape, order=0, preserve_range=True, anti_aliasing=False)
-        mask_rgb = np.zeros_like(slice_rgb)
-        mask_rgb[..., 0] = mask_slice  # Red overlay
-        slice_rgb = (1-alpha)*slice_rgb + alpha*mask_rgb
+        # Overlay mask in red
+        mask_rgb = np.zeros((*mask_slice.shape, 3))
+        mask_rgb[..., 0] = mask_slice  # red channel
+        ax.imshow(mask_rgb, alpha=alpha)
 
-    # Convert to uint8 for st.image
-    slice_rgb = (slice_rgb*255).astype(np.uint8)
+    ax.axis("off")
+    return fig
 
-    # Resize to control display height (~40% of page)
-    display_height = 400  # pixels
-    h, w, _ = slice_rgb.shape
-    scale = display_height / h
-    new_w, new_h = int(w*scale), int(h*scale)
-    slice_resized = resize(slice_rgb, (new_h, new_w), preserve_range=True).astype(np.uint8)
+# Example usage
+mri = np.random.rand(180, 180, 60)  # replace with your MRI array
+mask = np.random.randint(0, 2, (180, 180, 60))
 
-    st.image(slice_resized, use_column_width=True)
+slice_idx = 30
+fig = overlay_slice(mri, mask, slice_idx=slice_idx)
+
+# Display in Streamlit
+st.pyplot(fig, use_container_width=True)  # prevents auto-stretching
 
 # -------------------------
 # Sidebar session info
