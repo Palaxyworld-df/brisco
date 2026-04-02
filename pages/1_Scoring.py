@@ -121,7 +121,7 @@ if mri is not None:
 # -------------------------
 st.subheader("Scoring Form")
 with st.form("brisco_form"):
-    with st.expander("Step 1: Scan eligibility and image quality", expanded=True):
+    with st.expander("Scan eligibility and image quality", expanded=True):
         scan_excluded = st.radio("Scan excluded", ["No","Yes"])
         exclusion_reason = st.text_area("Reason for exclusion")
         fat_suppression = st.radio("Fat suppression applied", ["Yes","No"])
@@ -131,7 +131,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
         )
 
-    with st.expander("Step 2: Tumour morphology", expanded=False):
+    with st.expander("Tumour morphology", expanded=False):
         single_lesion = st.radio("Single contiguous lesion", ["Yes","No"])
         mass_enhancement = st.radio("Mass enhancement present", ["Yes","No"])
         non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes","No"])
@@ -140,7 +140,7 @@ with st.form("brisco_form"):
         nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
         necrosis = st.radio("Intratumoural necrosis present", ["Yes","No"])
 
-    with st.expander("Step 3: Segmentation quality assessment", expanded=False):
+    with st.expander("Segmentation quality assessment", expanded=False):
         satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
         num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
         required_additions = st.select_slider(
@@ -157,7 +157,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
         )
 
-    with st.expander("Step 4: Causes for false positives", expanded=False):
+    with st.expander("Causes for false positives", expanded=False):
         fp_vessels = st.checkbox("Blood vessels")
         fp_nodes = st.checkbox("Lymph nodes")
         fp_nodular = st.checkbox("Nodular enhancement")
@@ -168,7 +168,7 @@ with st.form("brisco_form"):
         fp_satellites = st.checkbox("Satellite lesions")
         fp_additional = st.text_input("Other causes for false positives (optional)")
 
-    with st.expander("Step 5: Causes for false negatives", expanded=False):
+    with st.expander("Causes for false negatives", expanded=False):
         fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes","No"])
         fn_additional = st.text_input("Other causes for false negatives (optional)")
 
