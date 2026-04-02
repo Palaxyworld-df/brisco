@@ -1,3 +1,100 @@
+import streamlit as st
+import nibabel as nib
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import tempfile
+from datetime import datetime
+from supabase import create_client
+
+st.set_page_config(page_title="BRISCo Scoring", layout="wide")
+
+# ---------------------------
+# SUPABASE
+# ---------------------------
+try:
+    supabase = create_client(
+        st.secrets["SUPABASE_URL"],
+        st.secrets["SUPABASE_KEY"]
+    )
+except:
+    st.error("❌ Database connection failed")
+    st.stop()
+
+# ---------------------------
+# AUTH CHECK
+# ---------------------------
+if "user_id" not in st.session_state:
+    st.warning("Please login from the home page")
+    st.stop()
+
+user_id = st.session_state.user_id
+
+st.title("BRISCo - Breast MRI Segmentation Scoring")
+
+# ---------------------------
+# FILE LOADER
+# ---------------------------
+@st.cache_data
+def load_nifti(uploaded_file):
+    suffix = ".nii.gz" if uploaded_file.name.endswith(".gz") else ".nii"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(uploaded_file.getbuffer())
+        tmp_path = tmp.name
+
+    img = nib.load(tmp_path)
+    return img.get_fdata()
+
+def overlay_slice(image, mask, slice_idx, alpha):
+    fig, ax = plt.subplots()
+    ax.imshow(image[:, :, slice_idx], cmap="gray")
+    if mask is not None:
+        ax.imshow(mask[:, :, slice_idx], cmap="jet", alpha=alpha)
+    ax.axis("off")
+    return fig
+
+# ---------------------------
+# SIDEBAR
+# ---------------------------
+st.sidebar.header("Session Info")
+st.sidebar.write(f"**User ID:** {user_id}")
+
+rater_id = st.sidebar.text_input("Rater ID")
+case_id = st.sidebar.text_input("Case ID")
+
+segmentation_method = st.sidebar.selectbox(
+    "Segmentation Method",
+    ["Manual", "Model A", "Model B"]
+)
+
+# ---------------------------
+# FILE UPLOAD
+# ---------------------------
+st.header("Upload MRI & Segmentation")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    mri_file = st.file_uploader("Upload MRI (.nii / .nii.gz)", type=["nii", "nii.gz"])
+
+with col2:
+    mask_file = st.file_uploader("Upload Mask (.nii / .nii.gz)", type=["nii", "nii.gz"])
+
+mri = load_nifti(mri_file) if mri_file else None
+mask = load_nifti(mask_file) if mask_file else None
+
+# ---------------------------
+# VIEWER
+# ---------------------------
+if mri is not None:
+    st.subheader("MRI Viewer")
+
+    slice_idx = st.slider("Slice Index", 0, mri.shape[2] - 1, mri.shape[2] // 2)
+    alpha = st.slider("Mask Opacity", 0.0, 1.0, 0.4)
+
+    fig = overlay_slice(mri, mask, slice_idx, alpha)
+    st.pyplot(fig)
+    
 # ---------------------------
 # Scoring form
 # ---------------------------
@@ -91,3 +188,61 @@ with st.form("qc_form"):
     fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes", "No"])
 
     submitted = st.form_submit_button("Click me to save your assessment")
+
+# ---------------------------
+# SAVE
+# ---------------------------
+if submitted:
+
+    # ✅ validation
+    if case_id.strip() == "" or rater_id.strip() == "":
+        st.warning("Please fill Case ID and Rater ID")
+        st.stop()
+
+    try:
+        supabase.table("scores").insert({
+            "timestamp": datetime.now().isoformat(),
+            "user_id": user_id,
+            "rater_id": rater_id,
+            "case_id": case_id,
+            "segmentation_method": segmentation_method,
+            "scan_excluded": scan_excluded,
+            "fat_suppression": fat_suppression,
+            "fat_suppression_quality": fat_suppression_quality,
+            "overall_quality": overall_quality
+        }).execute()
+
+        st.success("✅ Assessment saved successfully!")
+
+    except Exception as e:
+        st.error("❌ Failed to save data")
+
+# ---------------------------
+# LOAD USER DATA
+# ---------------------------
+st.subheader("My Previous Assessments")
+
+try:
+    response = supabase.table("scores")\
+        .select("*")\
+        .eq("user_id", user_id)\
+        .execute()
+
+    df = pd.DataFrame(response.data if response.data else [])
+
+    if not df.empty:
+        st.dataframe(df)
+
+        csv = df.to_csv(index=False)
+
+        st.download_button(
+            "Download My Data",
+            csv,
+            "my_scores.csv",
+            "text/csv"
+        )
+    else:
+        st.info("No data yet")
+
+except:
+    st.error("❌ Failed to load data")
