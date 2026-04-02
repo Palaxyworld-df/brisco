@@ -45,21 +45,20 @@ st.markdown("""
 # ---------------------------
 # NAVIGATION STATE
 # ---------------------------
-if "page" not in st.session_state:
-    st.session_state.page = "home"
-
 if st.session_state.page == "home":
-    col_left, col_center, col_right = st.columns([1, 2, 1])
-    with col_center:
-        btn_col1, btn_col2 = st.columns(2)
 
-    with btn_col1:
-        if st.button("Existing User"):
-            st.session_state.page = "login"
-    
-    with btn_col2:
-        if st.button("New User"):
-            st.session_state.page = "register"
+    col_left, col_center, col_right = st.columns([1, 2, 1])
+
+    with col_center:
+        btn1, btn2 = st.columns(2)
+
+        with btn1:
+            if st.button("To Enter as an Existing User"):
+                st.session_state.page = "login"
+
+        with btn2:
+            if st.button("To apply as a New User"):
+                st.session_state.page = "register"
 
 # ---------------------------
 # LOGIN
