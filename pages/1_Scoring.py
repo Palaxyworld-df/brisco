@@ -15,9 +15,11 @@ st.set_page_config(page_title="BRISCO", layout="wide")
 # -------------------------
 # SUPABASE SETUP
 # -------------------------
-SUPABASE_URL = "YOUR_SUPABASE_URL"
-SUPABASE_KEY = "YOUR_SUPABASE_KEY"
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# -------supabase---------- 
+url = st.secrets["SUPABASE_URL"] 
+key = st.secrets["SUPABASE_KEY"] 
+supabase = create_client(url, key)
+
 
 # -------------------------
 # AUTH CHECK
