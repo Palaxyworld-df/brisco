@@ -12,13 +12,13 @@ st.set_page_config(page_title="BRISCO", layout="wide")
 
 st.markdown("""
     <style>
-    .sticky-viewer {
+    .sticky-container {
         position: sticky;
-        top: 80px;
+        top: 70px;
         z-index: 999;
         background-color: white;
         padding: 10px;
-        border: 1px solid #eee;
+        border: 1px solid #ddd;
         border-radius: 10px;
     }
     </style>
