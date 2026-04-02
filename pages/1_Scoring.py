@@ -6,12 +6,14 @@ import pandas as pd
 from PIL import Image
 from datetime import datetime
 from supabase import create_client
+import uuid
 
 # -------------------------
 # CONFIG
 # -------------------------
 st.set_page_config(page_title="BRISCO", layout="wide")
 st.title("BRISCO Form")
+
 # -------------------------
 # SUPABASE SETUP
 # -------------------------
@@ -68,14 +70,12 @@ def get_slice_rgb(image, mask=None, slice_idx=0, alpha=0.4):
             pass
     return Image.fromarray(slice_rgb)
 
-import uuid
-
 # -------------------------
-# SIDEBAR: Metadata + Previous Data
+# SIDEBAR: Metadata + Session Data
 # -------------------------
 st.sidebar.header("Metadata and Data Management")
 
-# Generate a unique session id if not already
+# Generate session id
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 session_id = st.session_state.session_id
@@ -86,42 +86,16 @@ case_id = st.sidebar.text_input("Case ID", key="case_id")
 segmentation_options = ["Manual"]
 selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
 if selected_method == "Other":
-    segmentation_method = st.sidebar.text_input("Enter the name of your segmentation method")
+    segmentation_method = st.sidebar.text_input("Enter your segmentation method")
 else:
     segmentation_method = selected_method
 
-# -------------------------
-# LOAD CURRENT SESSION DATA
-# -------------------------
-# -------------------------
-# SIDEBAR: Metadata & Data Management
-# -------------------------
-import uuid
-
-st.sidebar.header("Metadata & Data Management")
-
-# Generate a unique session id if not already
-if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
-session_id = st.session_state.session_id
-
-# Metadata inputs
-rater_id = st.sidebar.text_input("Rater ID", key="rater_id")
-case_id = st.sidebar.text_input("Case ID", key="case_id")
-segmentation_options = ["Manual"]
-selected_method = st.sidebar.selectbox("Segmentation Method", segmentation_options + ["Other"])
-if selected_method == "Other":
-    segmentation_method = st.sidebar.text_input("Enter the name of your segmentation method")
-else:
-    segmentation_method = selected_method
-
-# -------------------------
-# LOAD USER DATA
-# -------------------------
+# Load user data
 try:
-    # All previous submissions
     response_all = supabase.table("scores").select("*").eq("user_id", user_id).execute()
     df_all = pd.DataFrame(response_all.data if response_all.data else [])
+
+    # Download all previous data
     if not df_all.empty:
         csv_all = df_all.to_csv(index=False)
         st.sidebar.download_button(
@@ -131,7 +105,7 @@ try:
             "text/csv"
         )
 
-    # Current session submissions
+    # Download current session data
     df_session = df_all[df_all["session_id"] == session_id] if not df_all.empty else pd.DataFrame()
     if not df_session.empty:
         csv_session = df_session.to_csv(index=False)
@@ -151,7 +125,7 @@ except Exception as e:
     st.sidebar.error(f"Failed to load data: {e}")
 
 # -------------------------
-# DISPLAY MRI
+# MRI VIEWER
 # -------------------------
 if mri is not None:
     st.subheader("MRI Viewer")
@@ -178,7 +152,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["None","Minor Failure","Moderate Failure","Major Failure"][x]
         )
 
-    with st.expander("Tumour morphology", expanded=False):
+    with st.expander("Tumour morphology"):
         single_lesion = st.radio("Single contiguous lesion", ["Yes","No"])
         mass_enhancement = st.radio("Mass enhancement present", ["Yes","No"])
         non_mass_enhancement = st.radio("Non-mass enhancement present", ["Yes","No"])
@@ -187,7 +161,7 @@ with st.form("brisco_form"):
         nodular_unclear = st.radio("Nodular enhancement of unclear significance", ["Yes","No"])
         necrosis = st.radio("Intratumoural necrosis present", ["Yes","No"])
 
-    with st.expander("Segmentation quality assessment", expanded=False):
+    with st.expander("Segmentation quality assessment"):
         satellite_included_omitted = st.radio("Satellite lesions included or omitted", ["Included","Omitted"])
         num_satellites_included = st.number_input("Number of satellite lesions included", min_value=0, step=1)
         required_additions = st.select_slider(
@@ -204,7 +178,7 @@ with st.form("brisco_form"):
             format_func=lambda x: ["Acceptable","Minor issues","Moderate issues","Major issues","Not acceptable"][x-1]
         )
 
-    with st.expander("Causes for false positives", expanded=False):
+    with st.expander("Causes for false positives"):
         fp_vessels = st.checkbox("Blood vessels")
         fp_nodes = st.checkbox("Lymph nodes")
         fp_nodular = st.checkbox("Nodular enhancement")
@@ -215,7 +189,7 @@ with st.form("brisco_form"):
         fp_satellites = st.checkbox("Satellite lesions")
         fp_additional = st.text_input("Other causes for false positives (optional)")
 
-    with st.expander("Causes for false negatives", expanded=False):
+    with st.expander("Causes for false negatives"):
         fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes","No"])
         fn_additional = st.text_input("Other causes for false negatives (optional)")
 
@@ -232,6 +206,7 @@ if submitted:
         data_to_save = {
             "timestamp": datetime.now().isoformat(),
             "user_id": user_id,
+            "session_id": session_id,
             "rater_id": rater_id,
             "case_id": case_id,
             "segmentation_method": segmentation_method,
@@ -264,7 +239,6 @@ if submitted:
             "fn_necrosis": fn_necrosis,
             "fn_additional": fn_additional
         }
-        data_to_save["session_id"] = session_id
         supabase.table("scores").insert(data_to_save).execute()
         st.success("✅ Assessment saved successfully!")
     except Exception as e:
