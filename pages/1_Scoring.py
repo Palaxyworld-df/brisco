@@ -6,6 +6,14 @@ import sqlite3
 import tempfile
 from datetime import datetime
 
+# -------supabase----------
+from supabase import create_client
+
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+
+supabase = create_client(url, key)
+
 # ---------------------------
 # AUTH CHECK
 # ---------------------------
@@ -17,57 +25,6 @@ user_id = st.session_state.user_id
 
 st.set_page_config(page_title="BRISCo Scoring", layout="wide")
 st.title("BRISCo - Breast MRI Segmentation Scoring")
-
-# ---------------------------
-# DATABASE SETUP
-# ---------------------------
-conn = sqlite3.connect("brisco.db", check_same_thread=False)
-cursor = conn.cursor()
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS scores (
-    timestamp TEXT,
-    user_id TEXT,
-    rater_id TEXT,
-    case_id TEXT,
-    segmentation_method TEXT,
-
-    scan_excluded TEXT,
-    exclusion_reason TEXT,
-    fat_suppression TEXT,
-    fat_suppression_quality INTEGER,
-
-    single_lesion TEXT,
-    mass_enhancement TEXT,
-    non_mass_enhancement TEXT,
-    satellite_lesions TEXT,
-    num_satellites INTEGER,
-    nodular_unclear TEXT,
-    necrosis TEXT,
-
-    strong_bpe TEXT,
-
-    satellite_included_omitted TEXT,
-    num_satellites_included INTEGER,
-    required_additions INTEGER,
-    required_deletions INTEGER,
-    complex_corrections TEXT,
-    overall_quality INTEGER,
-
-    fp_vessels INTEGER,
-    fp_nodes INTEGER,
-    fp_nodular INTEGER,
-    fp_shape INTEGER,
-    fp_skin INTEGER,
-    fp_nipple INTEGER,
-    fp_nme INTEGER,
-    fp_satellites INTEGER,
-
-    fn_necrosis TEXT
-)
-""")
-
-conn.commit()
 
 # ---------------------------
 # FILE LOADER
@@ -200,52 +157,47 @@ with st.form("qc_form"):
     submitted = st.form_submit_button("Save Assessment")
 
 # ---------------------------
-# SAVE TO DATABASE
+# SAVE
 # ---------------------------
 if submitted:
-    cursor.execute("""
-    INSERT INTO scores VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    """, (
-        datetime.now().isoformat(),
-        user_id,
-        rater_id,
-        case_id,
-        segmentation_method,
 
-        scan_excluded,
-        exclusion_reason,
-        fat_suppression,
-        fat_suppression_quality,
+    supabase.table("scores").insert({
+        "timestamp": datetime.now().isoformat(),
+        "user_id": user_id,
+        "rater_id": rater_id,
+        "case_id": case_id,
+        "segmentation_method": segmentation_method,
+        "scan_excluded": scan_excluded,
+        "fat_suppression": fat_suppression,
+        "fat_suppression_quality": fat_suppression_quality,
+        "overall_quality": overall_quality
+    }).execute()
 
-        single_lesion,
-        mass_enhancement,
-        non_mass_enhancement,
-        satellite_lesions,
-        num_satellites,
-        nodular_unclear,
-        necrosis,
+    st.success("Saved!")
 
-        strong_bpe,
+# ---------------------------
+# LOAD USER DATA
+# ---------------------------
+st.subheader("My Previous Assessments")
 
-        satellite_included_omitted,
-        num_satellites_included,
-        required_additions,
-        required_deletions,
-        complex_corrections,
-        overall_quality,
+response = supabase.table("scores")\
+    .select("*")\
+    .eq("user_id", user_id)\
+    .execute()
 
-        int(fp_vessels),
-        int(fp_nodes),
-        int(fp_nodular),
-        int(fp_shape),
-        int(fp_skin),
-        int(fp_nipple),
-        int(fp_nme),
-        int(fp_satellites),
+df = pd.DataFrame(response.data)
 
-        fn_necrosis
-    ))
+if not df.empty:
+    st.dataframe(df)
 
-    conn.commit()
+    # CSV DOWNLOAD
+    csv = df.to_csv(index=False)
 
-    st.success("✅ Assessment saved successfully!")
+    st.download_button(
+        "Download My Data",
+        csv,
+        "my_scores.csv",
+        "text/csv"
+    )
+else:
+    st.info("No data yet")
