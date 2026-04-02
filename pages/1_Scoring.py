@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime
 from supabase import create_client
 
-st.set_page_config(page_title="BRISCo Scoring", layout="wide")
+st.set_page_config(page_title="BRISCO", layout="wide")
 
 # -------supabase---------- 
 url = st.secrets["SUPABASE_URL"] 
@@ -77,15 +77,15 @@ st.sidebar.write(f"Selected segmentation method: {segmentation_method}")
 # ---------------------------
 # FILE UPLOAD
 # ---------------------------
-st.header("Upload MRI Scan and its Segmentation Mask")
+st.header("Upload MRI scan and its segmentation mask")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    mri_file = st.file_uploader("Upload MRI Scan (.nii / .nii.gz allowed)", type=["nii", "nii.gz"])
+    mri_file = st.file_uploader("Upload MRI scan (.nii / .nii.gz allowed)", type=["nii", "nii.gz"])
 
 with col2:
-    mask_file = st.file_uploader("Upload Mask (.nii / .nii.gz allowed)", type=["nii", "nii.gz"])
+    mask_file = st.file_uploader("Upload mask (.nii / .nii.gz allowed)", type=["nii", "nii.gz"])
 
 mri = load_nifti(mri_file) if mri_file else None
 mask = load_nifti(mask_file) if mask_file else None
@@ -96,7 +96,7 @@ mask = load_nifti(mask_file) if mask_file else None
 if mri is not None:
     st.subheader("MRI Viewer")
 
-    slice_idx = st.slider("Slice Index", 0, mri.shape[2] - 1, mri.shape[2] // 2)
+    slice_idx = st.slider("Slice index", 0, mri.shape[2] - 1, mri.shape[2] // 2)
     alpha = st.slider("Mask Opacity", 0.0, 1.0, 0.4)
 
     fig = overlay_slice(mri, mask, slice_idx, alpha)
@@ -105,7 +105,7 @@ if mri is not None:
 # ---------------------------
 # Scoring form
 # ---------------------------
-st.header("Form")
+
 
 with st.form("qc_form"):
     st.subheader("Scan eligibility and image quality")
@@ -179,7 +179,7 @@ with st.form("qc_form"):
         ][x - 1]
     )
 
-    st.subheader("Causes for False Positives Segmentation")
+    st.subheader("Causes for false positives segmentation")
 
     fp_vessels = st.checkbox("Blood vessels")
     fp_nodes = st.checkbox("Lymph nodes")
@@ -189,10 +189,14 @@ with st.form("qc_form"):
     fp_nipple = st.checkbox("Nipple–areolar complex")
     fp_nme = st.checkbox("Non-mass enhancement")
     fp_satellites = st.checkbox("Satellite lesions")
+    # Free text for additional false positive causes
+    fp_additional = st.text_input("Other causes for false positives (optional)")
 
-    st.subheader("Causes for False Positives Segmentation")
+    st.subheader("Causes for false negative segmentation")
 
     fn_necrosis = st.radio("Necrosis / fibrosis", ["Yes", "No"])
+    # Free text for additional false negative causes
+    fn_additional = st.text_input("Other causes for false negatives (optional)")
 
     submitted = st.form_submit_button("Click me to save your assessment")
 
