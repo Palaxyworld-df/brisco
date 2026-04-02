@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import tempfile
 from datetime import datetime
 from supabase import create_client
+import numpy as np
+from PIL import Image
 
 st.set_page_config(page_title="BRISCO", layout="wide")
 
@@ -46,19 +48,19 @@ if mri is not None:
     slice_idx = st.slider("Slice index", 0, mri.shape[2] - 1, mri.shape[2] // 2)
     alpha = st.slider("Mask opacity", 0.0, 1.0, 0.4)
 
-    # Calculate aspect ratio
-    h, w = mri.shape[:2]
-    aspect = w / h
+    # Convert slice + mask to RGB image
+    slice_img = mri[:, :, slice_idx]
+    slice_img = (slice_img - slice_img.min()) / (slice_img.max() - slice_img.min())  # normalize 0-1
+    slice_rgb = np.stack([slice_img]*3, axis=-1)
 
-    fig_height = 1  # fixed height 
-    fig_width = fig_height * aspect
-
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    ax.imshow(mri[:, :, slice_idx], cmap="gray")
     if mask is not None:
-        ax.imshow(mask[:, :, slice_idx], cmap="jet", alpha=alpha)
-    ax.axis("off")
-    st.pyplot(fig, use_container_width=True)
+        mask_slice = mask[:, :, slice_idx]
+        mask_rgb = np.zeros_like(slice_rgb)
+        mask_rgb[..., 0] = mask_slice  # Red channel for mask
+        slice_rgb = (1-alpha)*slice_rgb + alpha*mask_rgb
+
+    slice_rgb = (slice_rgb*255).astype(np.uint8)
+    st.image(slice_rgb, use_column_width=True, output_height=400)  # fixed height ~40% of typical page
 
 # -------------------------
 # Sidebar session info
