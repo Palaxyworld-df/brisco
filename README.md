@@ -14,7 +14,7 @@ BRISCO (**B**reast **MRI** **S**egmentation S**CO**ring) is a web-based applicat
 
 # Features
 
-- 🔐 User registration and authentication
+- 🔐 User registration
 - 🧠 Interactive MRI slice viewer
 - 🎨 Segmentation mask overlay visualization
 - 📂 Support for `.nii` and `.nii.gz` files
@@ -147,7 +147,7 @@ The analytics dashboard provides a simple overview of platform usage, including:
 
 # Citation
 
-If you use BRISCO in your research, please cite the associated publication once it becomes available.
+Coming soon
 
 ---
 
