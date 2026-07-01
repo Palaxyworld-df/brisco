@@ -153,4 +153,4 @@ Coming soon
 
 # License
 
-This project is intended for research and educational purposes. For redistribution or commercial use, please contact the project authors. 
+This project is intended for research and educational purposes. No redistribution or commercial use allowed.
