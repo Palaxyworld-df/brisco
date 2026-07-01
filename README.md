@@ -2,11 +2,7 @@
 
 > **Breast MRI Segmentation Scoring Interface**
 
-BRISCO (**B**reast **MRI** **S**egmentation S**CO**ring) is a web-based application developed using **Streamlit** for standardized evaluation of breast MRI lesion segmentations.
-
-The platform enables radiologists and researchers to upload breast MRI scans along with their corresponding segmentation masks, visually inspect the segmentation, complete a structured quality assessment, and securely store the evaluation for future analysis.
-
-BRISCO was designed to provide a consistent, reproducible, and user-friendly framework for assessing both manual and AI-generated breast MRI segmentations.
+BRISCO (**B**reast **MRI** **S**egmentation S**CO**ring) is a web-based application developed using **Streamlit** for standardized evaluation of breast MRI lesion segmentations. The platform enables radiologists and researchers to upload breast MRI scans along with their corresponding segmentation masks, visually inspect the segmentation, complete a structured quality assessment, and securely store the evaluation for future analysis.
 
 ---
 
