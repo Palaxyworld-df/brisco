@@ -106,7 +106,7 @@ BRISCO accepts:
 - MRI Volume (`.nii` or `.nii.gz`)
 - Corresponding Segmentation Mask (`.nii` or `.nii.gz`)
 
-Both files should have identical dimensions.
+Both files should have identical dimensions. The MRI and mask are NOT stored at the backend.
 
 ---
 
